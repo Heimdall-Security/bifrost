@@ -77,6 +77,11 @@ publishing {
         publications {
             mavenJava(MavenPublication) {
                 from components.java
+                versionMapping{
+                    allVariants{
+                        fromResolutionResult()
+                    }
+                }
             }
         }
     } else {
