@@ -1,0 +1,13 @@
+name: Task
+description: Any tasks that are not directly adding a new feature, enhancement or fixing a bug
+assignees:
+  - 'mayanksoni1996'
+type: "task"
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Describe the task.
+    validations:
+      required: true
