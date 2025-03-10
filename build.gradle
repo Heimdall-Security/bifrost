@@ -22,20 +22,30 @@ configurations {
 
 repositories {
     mavenCentral()
+    maven{
+        name = "GitHubPackages"
+        url = 'https://maven.pkg.github.com/heimdall-security/heimdall-commons-java'
+        credentials{
+            username = System.getenv('GITHUB_ACTOR')
+            password = System.getenv('GITHUB_TOKEN')
+        }
+    }
 }
 
 ext {
     set('springCloudVersion', "2024.0.0")
-    set('handlebars-version', '4.4.0')
+    set('handlebarsVersion', '4.4.0')
+    set('heimdallCommonsVersion','3')
 }
 
 dependencies {
+    implementation "com.heimdallauth.server:heimdall-commons-java:${heimdallCommonsVersion}"
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
     implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
-    implementation 'com.github.jknack:handlebars:${handlebars-version}'
+    implementation "com.github.jknack:handlebars:${handlebarsVersion}"
     implementation 'io.micrometer:micrometer-tracing-bridge-brave'
     implementation 'org.springframework.cloud:spring-cloud-starter-consul-discovery'
     implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
