@@ -1,6 +1,4 @@
 FROM gradle:8.13.0-jdk21-ubi-minimal as builder
-ENV GITHUB_TOKEN=${GITHUB_PACKAGES_TOKEN}
-ENV GITHUB_ACTOR=${GITHUB_ACTOR}
 WORKDIR /app
 COPY . .
 RUN gradle build -x test --debug --scan --stacktrace
