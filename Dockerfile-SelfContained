@@ -3,7 +3,7 @@ ENV GITHUB_TOKEN=${GITHUB_PACKAGES_TOKEN}
 ENV GITHUB_ACTOR=${GITHUB_ACTOR}
 WORKDIR /app
 COPY . .
-RUN gradle build -x test
+RUN gradle build -x test --debug --scan --stacktrace
 
 FROM eclipse-temurin:21.0.6_7-jre-ubi9-minimal
 WORKDIR /app
