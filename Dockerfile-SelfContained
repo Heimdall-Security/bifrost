@@ -1,7 +1,7 @@
 FROM gradle:8.13.0-jdk21-ubi-minimal as builder
 WORKDIR /app
 COPY . .
-RUN gradle build -x test --debug --scan --stacktrace
+RUN gradle build -x test
 
 FROM eclipse-temurin:21.0.6_7-jre-ubi9-minimal
 WORKDIR /app
