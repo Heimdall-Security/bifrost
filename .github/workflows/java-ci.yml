@@ -46,7 +46,7 @@ jobs:
           retention-days: 1
   docker-build:
     runs-on: ubuntu-latest
-#    if: startsWith(github.ref, 'refs/tags/')
+    if: startsWith(github.ref, 'refs/tags/')
     needs:
       - java-ci
     steps:
