@@ -57,6 +57,7 @@ jobs:
         id: download-artifact
         with:
           name: bifrost.jar
+          path: build/libs/bifrost.jar
       - name: Downloaded Artifact Path
         run: echo ${{ steps.download-artifact.outputs.download-path }}
       - name: Login to Github Container Registry
