@@ -11,3 +11,4 @@ ENV SPRING_PROFILES_ACTIVE=prod
 ENV ARTIFACTORY_PATH=build/libs/*.jar
 COPY --from=builder /app/build/libs/*.jar /app.jar
 CMD ["java", "-jar", "/app.jar"]
+EXPOSE 8080
