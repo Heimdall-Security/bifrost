@@ -8,3 +8,4 @@ spring:
         health-check-timeout: 10s
       host: ${CONSUL_FQDN}
       port: 443
+      scheme: https
