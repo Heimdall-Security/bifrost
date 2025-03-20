@@ -35,7 +35,7 @@ repositories {
 ext {
     set('springCloudVersion', "2024.0.0")
     set('handlebarsVersion', '4.4.0')
-    set('heimdallCommonsVersion','3')
+    set('heimdallCommonsVersion','6')
 }
 
 dependencies {
