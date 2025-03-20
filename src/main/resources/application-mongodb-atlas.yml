@@ -1,6 +1,6 @@
 spring:
   data:
     mongodb:
-      uri: mongodb+srv://${MONGO_ATLAS_USERNAME}:${MONGO_ATLAS_PASSWORD}@heimdall-id-dev-mongodb.b8xjz.mongodb.net/?retryWrites=true&w=majority&appName=heimdall-id-dev-mongodb
+      uri: ${MONGO_ATLAS_CONNECTION_STRING}
       authentication-database: admin
       database: bifrost-db
