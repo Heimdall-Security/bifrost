@@ -11,7 +11,9 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-@Document(collection = "suppression_list")
+import static com.heimdallauth.server.constants.MongoCollectionNames.SUPPRESSION_LIST_COLLECTION;
+
+@Document(collection = SUPPRESSION_LIST_COLLECTION)
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor

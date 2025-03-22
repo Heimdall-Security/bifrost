@@ -8,7 +8,9 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.UUID;
 
-@Document
+import static com.heimdallauth.server.constants.MongoCollectionNames.SMTP_CONFIGURATION_COLLECTION;
+
+@Document(collection = SMTP_CONFIGURATION_COLLECTION)
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor

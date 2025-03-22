@@ -8,7 +8,9 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import java.time.Instant;
 import java.util.UUID;
 
-@Document(collection = "configuration_set_master")
+import static com.heimdallauth.server.constants.MongoCollectionNames.CONFIGURATION_SET_COLLECTION;
+
+@Document(collection = CONFIGURATION_SET_COLLECTION)
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
