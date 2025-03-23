@@ -54,7 +54,7 @@ public class ConfigurationSetManagementServiceTest {
     public void testCreateConfigurationSet_withUniqueConfigurationSetName(){
         when(configurationSetDataManager.isConfigurationSetNameExist(Mockito.anyString())).thenReturn(Boolean.FALSE);
         when(configurationSetDataManager.getConfigurationSetByName(Mockito.anyString(), Mockito.any())).thenReturn(TEST_CONFIGURATION_SET_MODEL);
-        configurationSetManagementService.createConfigurationSet(TEST_CONFIGURATION_SET_ID, TEST_CONFIGURATION_SET_NAME, TEST_CONFIGURATION_SET_DESCRIPTION);
+        configurationSetManagementService.createConfigurationSet(UUID.randomUUID().toString(), TEST_CONFIGURATION_SET_NAME, TEST_CONFIGURATION_SET_DESCRIPTION);
     }
     @Test
     public void testCreateConfigurationSet_withNonUniqueConfigurationSetName(){
