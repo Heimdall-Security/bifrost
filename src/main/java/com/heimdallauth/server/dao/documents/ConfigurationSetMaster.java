@@ -20,8 +20,8 @@ public class ConfigurationSetMaster {
     @Id
     private UUID id;
     private String configurationSetName;
-    private String configurationSetDescriptoon;
-    @Indexed(unique = false)
+    private String configurationSetDescription;
+    @Indexed
     private UUID tenantId;
     private Instant createdAt;
     private Instant updatedAt;
