@@ -8,7 +8,9 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import java.time.Instant;
 import java.util.UUID;
 
-@Document(collection = "configuration_set_master")
+import static com.heimdallauth.server.constants.MongoCollectionNames.CONFIGURATION_SET_COLLECTION;
+
+@Document(collection = CONFIGURATION_SET_COLLECTION)
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -18,8 +20,8 @@ public class ConfigurationSetMaster {
     @Id
     private UUID id;
     private String configurationSetName;
-    private String configurationSetDescriptoon;
-    @Indexed(unique = false)
+    private String configurationSetDescription;
+    @Indexed
     private UUID tenantId;
     private Instant createdAt;
     private Instant updatedAt;

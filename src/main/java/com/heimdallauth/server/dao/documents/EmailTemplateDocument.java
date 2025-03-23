@@ -8,7 +8,9 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import java.util.List;
 import java.util.UUID;
 
-@Document(collection = "email_template")
+import static com.heimdallauth.server.constants.MongoCollectionNames.EMAILS_TEMPLATE_COLLECTION;
+
+@Document(collection = EMAILS_TEMPLATE_COLLECTION)
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
