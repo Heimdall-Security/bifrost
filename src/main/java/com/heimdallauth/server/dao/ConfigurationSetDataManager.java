@@ -9,7 +9,7 @@ import java.util.UUID;
 
 public interface ConfigurationSetDataManager {
     boolean isConfigurationSetNameExist(String configurationSetName);
-    void saveConfigurationSet(String configurationSetName, String configurationSetDescription);
+    void saveConfigurationSet(UUID tenantId, String configurationSetName, String configurationSetDescription);
     void updateConfigurationSetTemplate(String configurationSetId, String templateName, List<HeimdallMetadata> metadata, String subject, String richBodyContent, String textBodyContent);
     void updateConfigurationSetSuppressionList(String configurationSetId, String suppressionListEntry, String suppressionListEntryType);
     void updateConfigurationSetSmtpProperties(String configurationSetId, String host, String port, String username, String password, SmtpEncryption encryption);
