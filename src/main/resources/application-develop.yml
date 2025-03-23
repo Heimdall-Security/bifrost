@@ -1,0 +1,11 @@
+spring:
+  cloud:
+    consul:
+      discovery:
+        enabled: true
+        health-check-path: /actuator/health
+        health-check-interval: 15s
+        health-check-timeout: 10s
+      host: ${CONSUL_FQDN}
+      port: 443
+      scheme: https
