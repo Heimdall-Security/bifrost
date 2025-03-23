@@ -34,7 +34,7 @@ public class ConfigurationSetManagementService {
     public ConfigurationSetModel createConfigurationSet(String tenantId, String configurationSetName, String configurationSetDescription) throws HeimdallBifrostBadDataException {
         try{
             validateConfigurationSetName(configurationSetName);
-            this.configurationSetDataManager.saveConfigurationSet(configurationSetName, configurationSetDescription);
+            this.configurationSetDataManager.saveConfigurationSet(UUID.fromString(tenantId), configurationSetName, configurationSetDescription);
             return this.configurationSetDataManager.getConfigurationSetByName(configurationSetName, UUID.fromString(tenantId) );
         }catch (ConfigurationSetAlreadyExists e){
             log.error("Configuration set with the same name already exists: {}", configurationSetName);

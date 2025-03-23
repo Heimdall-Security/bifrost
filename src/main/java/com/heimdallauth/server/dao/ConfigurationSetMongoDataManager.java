@@ -4,12 +4,10 @@ import com.heimdallauth.server.constants.EmailTemplateAction;
 import com.heimdallauth.server.constants.SmtpEncryption;
 import com.heimdallauth.server.dao.documents.ConfigurationSetMaster;
 import com.heimdallauth.server.dao.documents.EmailTemplateDocument;
-import com.heimdallauth.server.dao.documents.SMTPPropertiesDocument;
 import com.heimdallauth.server.dao.documents.SuppressionListDocument;
 import com.heimdallauth.server.models.ConfigurationSetModel;
 import com.heimdallauth.server.utils.HeimdallMetadata;
 import com.heimdallauth.server.utils.MetadataUtils;
-import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
@@ -39,12 +37,13 @@ public class ConfigurationSetMongoDataManager implements ConfigurationSetDataMan
     }
 
     @Override
-    public void saveConfigurationSet(String configurationSetName, String configurationSetDescription) {
+    public void saveConfigurationSet(UUID tenantId,String configurationSetName, String configurationSetDescription) {
         UUID configurationSetId = UUID.randomUUID();
         ConfigurationSetMaster configurationSetMaster = ConfigurationSetMaster.builder()
                 .id(configurationSetId)
+                .tenantId(tenantId)
                 .configurationSetName(configurationSetName)
-                .configurationSetDescriptoon(configurationSetDescription)
+                .configurationSetDescription(configurationSetDescription)
                 .build();
         List<EmailTemplateDocument> emailTemplates = getEmailTemplates(configurationSetId);
         SuppressionListDocument suppressionListDocument = SuppressionListDocument.builder()
