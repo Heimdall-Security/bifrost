@@ -1,13 +1,15 @@
 package com.heimdallauth.server.dao;
 
 import com.heimdallauth.server.constants.EmailTemplateAction;
-import com.heimdallauth.server.constants.SmtpEncryption;
 import com.heimdallauth.server.dao.documents.ConfigurationSetMaster;
 import com.heimdallauth.server.dao.documents.EmailTemplateDocument;
 import com.heimdallauth.server.dao.documents.SuppressionListDocument;
+import com.heimdallauth.server.exceptions.ConfigurationSetNotFound;
 import com.heimdallauth.server.models.ConfigurationSetModel;
-import com.heimdallauth.server.utils.HeimdallMetadata;
+import com.heimdallauth.server.models.EmailTemplateModel;
+import com.heimdallauth.server.models.SmtpProperties;
 import com.heimdallauth.server.utils.MetadataUtils;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
@@ -15,15 +17,14 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
+import static com.heimdallauth.server.constants.HeimdallBifrostExceptionMessages.CONFIGURATION_SET_NOT_FOUND;
 import static com.heimdallauth.server.constants.MongoCollectionNames.*;
 
 @Repository
 public class ConfigurationSetMongoDataManager implements ConfigurationSetDataManager {
+    private static final ModelMapper CONFIGURATION_SET_MAPPER = new ModelMapper();
     private final MongoTemplate mongoTemplate;
 
     @Autowired
@@ -60,24 +61,18 @@ public class ConfigurationSetMongoDataManager implements ConfigurationSetDataMan
     }
 
     @Override
-    public void updateConfigurationSetTemplate(String configurationSetId, String templateName, List<HeimdallMetadata> metadata, String subject, String richBodyContent, String textBodyContent) {
-
+    public ConfigurationSetModel updateConfigurationSet(UUID configurationSetId, ConfigurationSetModel updatedConfigurationSetModel) {
+        //TODO: Implement the update logic properly
+        Optional<ConfigurationSetModel> existingConfigurationSet = Optional.ofNullable(getConfigurationSetById(configurationSetId));
+        existingConfigurationSet.ifPresentOrElse((configurationSetModel) -> {
+            List<EmailTemplateModel> emailTemplates = updatedConfigurationSetModel.getTemplates();
+            SmtpProperties smtpProperties = updatedConfigurationSetModel.getSmtpProperties();
+        }, ()-> {
+            throw new ConfigurationSetNotFound(CONFIGURATION_SET_NOT_FOUND);
+        });
+        return this.getConfigurationSetById(configurationSetId);
     }
 
-    @Override
-    public void updateConfigurationSetSuppressionList(String configurationSetId, String suppressionListEntry, String suppressionListEntryType) {
-
-    }
-
-    @Override
-    public void updateConfigurationSetSmtpProperties(String configurationSetId, String host, String port, String username, String password, SmtpEncryption encryption) {
-
-    }
-
-    @Override
-    public void deleteConfigurationSet(String configurationSetId) {
-
-    }
 
     @Override
     public ConfigurationSetModel getConfigurationSetById(UUID configurationSetId) {
