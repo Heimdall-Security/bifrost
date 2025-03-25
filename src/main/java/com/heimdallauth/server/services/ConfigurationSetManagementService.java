@@ -8,9 +8,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
 import java.util.UUID;
 
 import static com.heimdallauth.server.constants.HeimdallBifrostExceptionMessages.CONFIGURATION_SET_EXISTS;
+import static com.heimdallauth.server.constants.HeimdallBifrostExceptionMessages.INVALID_REQUEST_CONFIG;
 
 @Service
 @Slf4j
@@ -30,6 +32,19 @@ public class ConfigurationSetManagementService {
             log.error("Invalid configuration set id: {}", configurationSetId);
             return null;
         }
+    }
+
+    public ConfigurationSetModel getConfigurationSet(Optional<UUID> configurationSetId, Optional<String> configurationSetName, Optional<UUID> tenantID) {
+        if (configurationSetId.isPresent()) {
+            return this.configurationSetDataManager.getConfigurationSetById(configurationSetId.get());
+        } else if (configurationSetName.isPresent() && tenantID.isPresent()) {
+            return this.configurationSetDataManager.getConfigurationSetByName(configurationSetName.get(), tenantID.get());
+        }
+        throw new HeimdallBifrostBadDataException(INVALID_REQUEST_CONFIG);
+    }
+
+    public ConfigurationSetModel updateConfigurationSet(ConfigurationSetModel configurationSetModel) {
+        
     }
     public ConfigurationSetModel createConfigurationSet(String tenantId, String configurationSetName, String configurationSetDescription) throws HeimdallBifrostBadDataException {
         try{
