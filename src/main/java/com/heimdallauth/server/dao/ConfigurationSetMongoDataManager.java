@@ -5,6 +5,7 @@ import com.heimdallauth.server.dao.documents.ConfigurationSetMaster;
 import com.heimdallauth.server.dao.documents.EmailTemplateDocument;
 import com.heimdallauth.server.dao.documents.SuppressionListDocument;
 import com.heimdallauth.server.exceptions.ConfigurationSetNotFound;
+import com.heimdallauth.server.exceptions.HeimdallBifrostBadDataException;
 import com.heimdallauth.server.models.ConfigurationSetModel;
 import com.heimdallauth.server.models.EmailTemplateModel;
 import com.heimdallauth.server.models.SmtpProperties;
@@ -63,37 +64,36 @@ public class ConfigurationSetMongoDataManager implements ConfigurationSetDataMan
     @Override
     public ConfigurationSetModel updateConfigurationSet(UUID configurationSetId, ConfigurationSetModel updatedConfigurationSetModel) {
         //TODO: Implement the update logic properly
-        Optional<ConfigurationSetModel> existingConfigurationSet = Optional.ofNullable(getConfigurationSetById(configurationSetId));
-        existingConfigurationSet.ifPresentOrElse((configurationSetModel) -> {
-            List<EmailTemplateModel> emailTemplates = updatedConfigurationSetModel.getTemplates();
-            SmtpProperties smtpProperties = updatedConfigurationSetModel.getSmtpProperties();
-        }, ()-> {
-            throw new ConfigurationSetNotFound(CONFIGURATION_SET_NOT_FOUND);
-        });
-        return this.getConfigurationSetById(configurationSetId);
+        try{
+            ConfigurationSetModel existingDbModel = this.getConfigurationSetById(configurationSetId).orElseThrow(() -> new ConfigurationSetNotFound(CONFIGURATION_SET_NOT_FOUND));
+            //TODO: Implement the update logic properly
+        }catch (ConfigurationSetNotFound e) {
+            throw new HeimdallBifrostBadDataException(e.getMessage());
+        }
+        return this.getConfigurationSetById(configurationSetId).orElseThrow(() -> new ConfigurationSetNotFound(CONFIGURATION_SET_NOT_FOUND));
     }
 
 
     @Override
-    public ConfigurationSetModel getConfigurationSetById(UUID configurationSetId) {
+    public Optional<ConfigurationSetModel> getConfigurationSetById(UUID configurationSetId) {
         Aggregation aggregationPipelineConfig = Aggregation.newAggregation(
                 Aggregation.match(Criteria.where("id").is(configurationSetId)),
                 Aggregation.lookup(EMAILS_TEMPLATE_COLLECTION, "id", "configurationSetId", "emailTemplates"),
                 Aggregation.lookup(SMTP_CONFIGURATION_COLLECTION, "id", "configurationSetId", "smtpProperties"),
                 Aggregation.project("id", "configurationSetName", "configurationSetDescriptoon", "emailTemplates", "smtpProperties")
         );
-        return this.mongoTemplate.aggregate(aggregationPipelineConfig, CONFIGURATION_SET_COLLECTION, ConfigurationSetModel.class).getUniqueMappedResult();
+        return Optional.ofNullable(this.mongoTemplate.aggregate(aggregationPipelineConfig, CONFIGURATION_SET_COLLECTION, ConfigurationSetModel.class).getUniqueMappedResult());
     }
 
     @Override
-    public ConfigurationSetModel getConfigurationSetByName(String configurationSetName, UUID tenantId) {
+    public Optional<ConfigurationSetModel> getConfigurationSetByName(String configurationSetName, UUID tenantId) {
         Aggregation aggregationPipelineConfig = Aggregation.newAggregation(
           Aggregation.match(Criteria.where("tenantId").is(tenantId).and("configurationSetName").is(configurationSetName)),
                 Aggregation.lookup(EMAILS_TEMPLATE_COLLECTION, "id", "configurationSetId", "emailTemplates"),
                 Aggregation.lookup(SMTP_CONFIGURATION_COLLECTION, "id", "configurationSetId", "smtpProperties"),
                 Aggregation.project("id", "configurationSetName", "configurationSetDescriptoon", "emailTemplates", "smtpProperties")
         );
-        return this.mongoTemplate.aggregate(aggregationPipelineConfig, EMAILS_TEMPLATE_COLLECTION, ConfigurationSetModel.class).getUniqueMappedResult();
+        return Optional.ofNullable(this.mongoTemplate.aggregate(aggregationPipelineConfig, EMAILS_TEMPLATE_COLLECTION, ConfigurationSetModel.class).getUniqueMappedResult());
     }
 
     private List<EmailTemplateDocument> getEmailTemplates(UUID configurationSetId) {
