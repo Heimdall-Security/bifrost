@@ -60,11 +60,11 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
      */
     @Override
     public ConfigurationSetModel createNewConfigurationSet(CreateConfigurationSetDTO createConfigurationSetPayload,UUID tenantId ,boolean force) throws ConfigurationSetAlreadyExists {
-        if(!force || isConfigurationSetExists(createConfigurationSetPayload.getConfigurationSetName(), tenantId)){
+        if(!force || isConfigurationSetExists(createConfigurationSetPayload.configurationSetName(), tenantId)){
             throw new ConfigurationSetAlreadyExists("Configuration set already exists");
         }
-        if(createConfigurationSetPayload.getEmailSuppressionEntries() != null && !createConfigurationSetPayload.getEmailSuppressionEntries().isEmpty()){
-            List<UUID> suppressionIdsNotPresent = this.getSuppressionIdsNotPresent(createConfigurationSetPayload.getEmailSuppressionEntries());
+        if(createConfigurationSetPayload.suppressionEntryIds() != null && !createConfigurationSetPayload.suppressionEntryIds().isEmpty()){
+            List<UUID> suppressionIdsNotPresent = this.getSuppressionIdsNotPresent(createConfigurationSetPayload.suppressionEntryIds());
             if(!suppressionIdsNotPresent.isEmpty()){
                 throw new SuppressionListNotFound("Suppression list not found");
             }
@@ -73,9 +73,9 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
         ConfigurationSetMasterDocument configurationSetMasterDocument = ConfigurationSetMasterDocument.builder()
                 .configurationId(configurationSetId.toString())
                 .tenantId(tenantId)
-                .configurationSetName(createConfigurationSetPayload.getConfigurationSetName())
-                .configurationSetDescription(createConfigurationSetPayload.getConfigurationSetDescription())
-                .suppressionListIds(createConfigurationSetPayload.getEmailSuppressionEntries())
+                .configurationSetName(createConfigurationSetPayload.configurationSetName())
+                .configurationSetDescription(createConfigurationSetPayload.configurationSetDescription())
+                .suppressionListIds(createConfigurationSetPayload.suppressionEntryIds())
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
                 .build();
@@ -109,6 +109,18 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
         }
         return null;
     }
+
+    @Override
+    public List<ConfigurationSetModel> getConfigurationSetsForTenantId(UUID tenantId) {
+        Query searchConfigurationSetForTenantQuery = Query.query(Criteria.where("tenantId").is(tenantId));
+        List<ConfigurationSetMasterDocument> configurationSetDocuments = this.mongoTemplate.find(searchConfigurationSetForTenantQuery, ConfigurationSetMasterDocument.class, COLLECTION_CONFIGURATION_SETS);
+        if(configurationSetDocuments.isEmpty()){
+            return List.of();
+        }else{
+            return configurationSetDocuments.stream().map(s -> configurationMapper.toConfigurationSetModel(s)).toList();
+        }
+    }
+
     /**
      * Get a configuration set by its ID.
      *
