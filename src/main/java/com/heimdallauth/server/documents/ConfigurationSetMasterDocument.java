@@ -18,7 +18,7 @@ import java.util.UUID;
 @Setter
 public class ConfigurationSetMasterDocument {
     @Id
-    private UUID configurationId;
+    private String configurationId;
     private String configurationSetName;
     private String configurationSetDescription;
     @Indexed
