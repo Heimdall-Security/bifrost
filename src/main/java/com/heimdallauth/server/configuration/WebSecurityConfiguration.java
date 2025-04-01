@@ -27,7 +27,7 @@ public class WebSecurityConfiguration {
         return http.build();
     }
     @Bean
-    @Profile("!local")
+    @Profile("production")
     public SecurityFilterChain nonLocalSecurityFilterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests(authorize -> authorize
