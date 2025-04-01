@@ -117,7 +117,7 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
         if(configurationSetDocuments.isEmpty()){
             return List.of();
         }else{
-            return configurationSetDocuments.stream().map(s -> configurationMapper.toConfigurationSetModel(s)).toList();
+            return configurationSetDocuments.stream().map(configurationMapper::toConfigurationSetModel).toList();
         }
     }
 
