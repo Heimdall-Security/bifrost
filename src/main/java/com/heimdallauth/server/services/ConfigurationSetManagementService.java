@@ -1,53 +1,16 @@
 package com.heimdallauth.server.services;
 
-import com.heimdallauth.server.dao.ConfigurationSetDataManager;
+import com.heimdallauth.server.dto.bifrost.ConfigurationSetDTO;
+import com.heimdallauth.server.dto.bifrost.CreateConfigurationSetDTO;
 import com.heimdallauth.server.exceptions.ConfigurationSetAlreadyExists;
-import com.heimdallauth.server.exceptions.HeimdallBifrostBadDataException;
-import com.heimdallauth.server.models.ConfigurationSetModel;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+import com.heimdallauth.server.exceptions.ConfigurationSetNotFound;
+import com.heimdallauth.server.models.bifrost.ConfigurationSetModel;
 
 import java.util.UUID;
 
-import static com.heimdallauth.server.constants.HeimdallBifrostExceptionMessages.CONFIGURATION_SET_EXISTS;
-
-@Service
-@Slf4j
-public class ConfigurationSetManagementService {
-    private final ConfigurationSetDataManager configurationSetDataManager;
-
-    @Autowired
-    public ConfigurationSetManagementService(ConfigurationSetDataManager configurationSetDataManager) {
-        this.configurationSetDataManager = configurationSetDataManager;
-    }
-
-    public ConfigurationSetModel getConfigurationSetModel(String configurationSetId){
-        try{
-            UUID configurationSetUUID = UUID.fromString(configurationSetId);
-            return configurationSetDataManager.getConfigurationSetById(configurationSetUUID);
-        }catch (IllegalArgumentException e){
-            log.error("Invalid configuration set id: {}", configurationSetId);
-            return null;
-        }
-    }
-    public ConfigurationSetModel createConfigurationSet(String tenantId, String configurationSetName, String configurationSetDescription) throws HeimdallBifrostBadDataException {
-        try{
-            validateConfigurationSetName(configurationSetName);
-            this.configurationSetDataManager.saveConfigurationSet(UUID.fromString(tenantId), configurationSetName, configurationSetDescription);
-            return this.configurationSetDataManager.getConfigurationSetByName(configurationSetName, UUID.fromString(tenantId) );
-        }catch (ConfigurationSetAlreadyExists e){
-            log.error("Configuration set with the same name already exists: {}", configurationSetName);
-            throw new HeimdallBifrostBadDataException(e.getMessage());
-        }catch (IllegalArgumentException e){
-            log.error("Invalid tenant id: {}", tenantId);
-            throw new HeimdallBifrostBadDataException("Invalid tenant id");
-        }
-    }
-
-    private void validateConfigurationSetName(String configurationSetName){
-        if(this.configurationSetDataManager.isConfigurationSetNameExist(configurationSetName)){
-            throw new ConfigurationSetAlreadyExists(CONFIGURATION_SET_EXISTS);
-        }
-    }
+public interface ConfigurationSetManagementService {
+    ConfigurationSetModel createNewConfigurationSet(CreateConfigurationSetDTO createConfigurationSetPayload, UUID tenantID, boolean force) throws ConfigurationSetAlreadyExists;
+    ConfigurationSetModel getConfigurationSetById(UUID configurationSetId) throws ConfigurationSetNotFound;
+    ConfigurationSetModel getConfigurationSetByNameAndTenantId(String configurationSetName, String tenantId) throws ConfigurationSetNotFound;
+    ConfigurationSetModel updateConfigurationSetMasterData(String configurationSetId, String configurationSetName, String configurationSetDescription) throws ConfigurationSetNotFound;
 }
