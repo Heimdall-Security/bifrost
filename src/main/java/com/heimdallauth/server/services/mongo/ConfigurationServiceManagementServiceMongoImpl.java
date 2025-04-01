@@ -41,7 +41,6 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
     private final SuppressionEntryMapper suppressionEntryMapper;
     private static final String COLLECTION_CONFIGURATION_SETS = "configuration_sets";
     private static final String COLLECTION_SUPPRESSION_LIST = "suppression_list";
-    private static final String CONFIGURATION_SET_SUPPRESSION_LIST_MAPPING = "configuration_set_suppression_list_mapping";
 
     public ConfigurationServiceManagementServiceMongoImpl(MongoTemplate mongoTemplate, ConfigurationMapper configurationMapper, SuppressionEntryMapper suppressionEntryMapper) {
         this.mongoTemplate = mongoTemplate;
