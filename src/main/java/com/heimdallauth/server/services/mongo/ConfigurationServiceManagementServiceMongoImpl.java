@@ -214,9 +214,9 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
     public SuppressionEntryModel createSuppressionEntry(CreateSuppressionEntryDTO createSuppressionEntryPayload) {
         SuppressionEntryDocument suppressionEntryDocument = SuppressionEntryDocument.builder()
                 .id(UUID.randomUUID().toString())
-                .entryType(createSuppressionEntryPayload.getEntryType())
-                .value(createSuppressionEntryPayload.getSuppressionEntryValue())
-                .reason(createSuppressionEntryPayload.getReason())
+                .entryType(createSuppressionEntryPayload.entryType())
+                .value(createSuppressionEntryPayload.value())
+                .reason(createSuppressionEntryPayload.reason())
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
                 .build();
@@ -292,7 +292,7 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
      * @return A list of UUIDs representing the suppression IDs that are not present in the database.
      */
     private List<UUID> getSuppressionIdsNotPresent(List<UUID> idsToValidate){
-        List<UUID> idsMatchedInDB = this.getAllSuppressionEntriesById(idsToValidate).stream().map(SuppressionEntryModel::getSuppressionEntryId).toList();
+        List<UUID> idsMatchedInDB = this.getAllSuppressionEntriesById(idsToValidate).stream().map(SuppressionEntryModel::suppressionEntryId).toList();
         return idsToValidate.stream().filter(id -> !idsMatchedInDB.contains(id)).toList();
     }
     /**

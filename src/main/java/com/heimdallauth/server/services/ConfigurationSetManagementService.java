@@ -1,6 +1,5 @@
 package com.heimdallauth.server.services;
 
-import com.heimdallauth.server.dto.bifrost.ConfigurationSetDTO;
 import com.heimdallauth.server.dto.bifrost.CreateConfigurationSetDTO;
 import com.heimdallauth.server.exceptions.ConfigurationSetAlreadyExists;
 import com.heimdallauth.server.exceptions.ConfigurationSetNotFound;
