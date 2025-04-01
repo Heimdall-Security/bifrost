@@ -26,7 +26,7 @@ public class ConfigurationSetManagementController {
     }
     @PostMapping("/create")
     public ResponseEntity<ConfigurationSetModel> createNewConfigurationSet(@RequestBody CreateConfigurationSetDTO createConfigurationSetDTO, @RequestParam("force") boolean force){
-        ConfigurationSetModel createdConfigurationSet = this.configurationSetManagementService.createNewConfigurationSet(createConfigurationSetDTO, UUID.randomUUID(), force);
+        ConfigurationSetModel createdConfigurationSet = this.configurationSetManagementService.createNewConfigurationSet(createConfigurationSetDTO, createConfigurationSetDTO.tenantId(), force);
         return ResponseEntity.created(ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(createdConfigurationSet.configurationSetId()).toUri()).build();
     }
     @GetMapping
