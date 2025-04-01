@@ -4,6 +4,7 @@ spring:
       discovery:
         enabled: true
         health-check-path: /actuator/health
+        hostname: ${PUBLIC_FQDN}
         health-check-interval: 15s
         health-check-timeout: 10s
       host: ${CONSUL_FQDN}
