@@ -14,7 +14,7 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${ SECURITY_TOKEN_ISSUER }
+          issuer-uri: ${SECURITY_TOKEN_ISSUER}
 heimdall:
   bifrost:
     security:
@@ -23,7 +23,7 @@ heimdall:
           role-management-read: READ:MANAGEMENT
           role-management-write: WRITE:MANAGEMENT
         client:
-          client-id: ${ OAUTH_CLIENT_ID }
+          client-id: ${OAUTH_CLIENT_ID}
 
 logging:
   level:
