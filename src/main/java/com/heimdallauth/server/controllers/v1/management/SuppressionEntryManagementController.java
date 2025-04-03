@@ -7,6 +7,7 @@ import com.heimdallauth.server.services.EmailSuppressionManagementService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -14,7 +15,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/v1/management/suppression-entry")
+@RequestMapping("/api/v1/management/suppression-entry")
 @Tag(name = "Suppression Entry Management Controller", description = "Controller for managing suppression entries")
 public class SuppressionEntryManagementController {
     private final EmailSuppressionManagementService emailSuppressionManagementService;
@@ -25,18 +26,22 @@ public class SuppressionEntryManagementController {
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('READ:MANAGEMENT') or hasRole('WRITE:SUPPRESSION_LIST')")
     public ResponseEntity<List<SuppressionEntryModel>> getAllSuppressionEntries(){
         return ResponseEntity.ok(emailSuppressionManagementService.getAllSuppressionEntries());
     }
+    @PreAuthorize("hasRole('READ:MANAGEMENT') or hasRole('WRITE:SUPPRESSION_LIST')")
     @GetMapping("/{suppressionEntryId}")
     public ResponseEntity<SuppressionEntryModel> getSuppressionEntryById(@PathVariable UUID suppressionEntryId) throws SuppressionListNotFound {
         return ResponseEntity.ok(this.emailSuppressionManagementService.getSuppressionEntryById(suppressionEntryId));
     }
+    @PreAuthorize("hasRole('WRITE:SUPPRESSION_LIST')")
     @PostMapping
     public ResponseEntity<SuppressionEntryModel> createNewSuppressionEntry(@RequestBody CreateSuppressionEntryDTO createSuppressionEntryDTO) throws SuppressionListNotFound {
         SuppressionEntryModel createdSuppressionEntry = this.emailSuppressionManagementService.createSuppressionEntry(createSuppressionEntryDTO);
         return ResponseEntity.created(ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(createdSuppressionEntry.getSuppressionEntryId()).toUri()).build();
     }
+    @PreAuthorize("hasRole('WRITE:SUPPRESSION_LIST')")
     @DeleteMapping("/{suppressionEntryId}")
     public ResponseEntity<Void> deleteSuppressionEntryById(@PathVariable UUID suppressionEntryId) throws SuppressionListNotFound {
         this.emailSuppressionManagementService.deleteSuppressionEntryById(suppressionEntryId);
