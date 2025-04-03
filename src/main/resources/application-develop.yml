@@ -10,3 +10,21 @@ spring:
       host: ${CONSUL_FQDN}
       port: 443
       scheme: https
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${ SECURITY_TOKEN_ISSUER }
+heimdall:
+  bifrost:
+    security:
+      oauth2:
+        roles:
+          role-management-read: READ:MANAGEMENT
+          role-management-write: WRITE:MANAGEMENT
+        client:
+          client-id: ${ OAUTH_CLIENT_ID }
+
+logging:
+  level:
+    org.springframework.security: DEBUG
