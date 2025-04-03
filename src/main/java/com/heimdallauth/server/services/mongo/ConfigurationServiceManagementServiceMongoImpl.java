@@ -301,6 +301,7 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
      */
     @Scheduled(cron = "0 0 0 * * ?")
     void triggerDatabaseMaintenance() {
+        log.debug("Database maintenance triggered");
        triggerUnusedSuppressionList();
     }
     /**
@@ -311,6 +312,7 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
         Set<String> allSuppressionListIds = this.mongoTemplate.findAll(ConfigurationSetMasterDocument.class, COLLECTION_CONFIGURATION_SETS).stream().map(ConfigurationSetMasterDocument::getSuppressionListIds).flatMap(List::stream).collect(Collectors.toSet());
         Set<String> allSuppressionIds = this.mongoTemplate.findAll(SuppressionEntryDocument.class, COLLECTION_SUPPRESSION_LIST).stream().map(SuppressionEntryDocument::getId).collect(Collectors.toSet());
         Set<String> unusedSuppressionIds = allSuppressionIds.stream().filter(id -> !allSuppressionListIds.contains(id)).collect(Collectors.toSet());
+        log.debug("Unused Suppression List: {}", unusedSuppressionIds);
         this.deleteSuppressionEntryByIds(unusedSuppressionIds.stream().toList());
     }
 
