@@ -24,7 +24,7 @@ public class ConfigurationSetMasterDocument {
     @Indexed
     private UUID tenantId;
     @Indexed
-    private List<UUID> suppressionListIds;
+    private List<String> suppressionListIds;
     private Instant createdAt;
     private Instant updatedAt;
 }
