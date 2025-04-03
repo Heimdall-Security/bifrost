@@ -20,9 +20,9 @@ import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 @EnableMethodSecurity(prePostEnabled = true)
 public class WebSecurityConfiguration {
     @Bean
-    public JwtAuthenticationConverter jwtAuthenticationConverter() {
+    public JwtAuthenticationConverter jwtAuthenticationConverter(HeimdallOauth2ClientConfiguration config) {
         JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
-        jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(new KeycloakJwtAuthoritiesConverter());
+        jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(new KeycloakJwtAuthoritiesConverter(config));
         jwtAuthenticationConverter.setPrincipalClaimName("username");
         return jwtAuthenticationConverter;
     }

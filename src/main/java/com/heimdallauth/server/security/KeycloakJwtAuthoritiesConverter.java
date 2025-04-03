@@ -1,5 +1,6 @@
 package com.heimdallauth.server.security;
 
+import com.heimdallauth.server.configuration.HeimdallOauth2ClientConfiguration;
 import jakarta.validation.constraints.NotNull;
 import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,7 +23,11 @@ public class KeycloakJwtAuthoritiesConverter implements Converter<Jwt, Collectio
     private static final String ROLES_CLAIM = "roles";
     private static final String SCOPE_CLAIM = "scope";
 
-    private static final String CLIENT_ID = "heimdall-bifrost-app";
+    private final String CLIENT_ID;
+
+    public KeycloakJwtAuthoritiesConverter(HeimdallOauth2ClientConfiguration config) {
+        CLIENT_ID = config.getClientId();
+    }
 
     @Override
     public Set<GrantedAuthority> convert(@NonNull Jwt source) {
