@@ -27,7 +27,7 @@ public class ConfigurationSetManagementController {
         return ResponseEntity.ok(this.configurationSetManagementService.getConfigurationSetById(configurationSetId));
     }
     @PostMapping("/create")
-    @PreAuthorize("hasRole(@heimdallBifrostRoleConfiguration.ROLE_MANAGEMENT_READ) or hasRole(@heimdallBifrostRoleConfiguration.ROLE_MANAGEMENT_WRITE)")
+    @PreAuthorize("hasRole(@heimdallBifrostRoleConfiguration.ROLE_MANAGEMENT_WRITE)")
     public ResponseEntity<ConfigurationSetModel> createNewConfigurationSet(@RequestBody CreateConfigurationSetDTO createConfigurationSetDTO, @RequestParam("force") boolean force){
         ConfigurationSetModel createdConfigurationSet = this.configurationSetManagementService.createNewConfigurationSet(createConfigurationSetDTO, createConfigurationSetDTO.tenantId(), force);
         return ResponseEntity.created(ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(createdConfigurationSet.configurationSetId()).toUri()).build();
