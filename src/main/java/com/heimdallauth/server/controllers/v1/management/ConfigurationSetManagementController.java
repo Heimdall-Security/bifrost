@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/v1/management/configuration-set")
+@RequestMapping("/api/v1/management/configuration-set")
 @Tag(name = "Configuration Set Management Controller", description = "Controller for managing configuration sets")
 public class ConfigurationSetManagementController {
     private final ConfigurationSetManagementService configurationSetManagementService;
