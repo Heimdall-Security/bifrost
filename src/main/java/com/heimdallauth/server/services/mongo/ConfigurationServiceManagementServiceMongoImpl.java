@@ -41,7 +41,6 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
     private final SuppressionEntryMapper suppressionEntryMapper;
     private static final String COLLECTION_CONFIGURATION_SETS = "configuration_sets";
     private static final String COLLECTION_SUPPRESSION_LIST = "suppression_list";
-    private static final String CONFIGURATION_SET_SUPPRESSION_LIST_MAPPING = "configuration_set_suppression_list_mapping";
 
     public ConfigurationServiceManagementServiceMongoImpl(MongoTemplate mongoTemplate, ConfigurationMapper configurationMapper, SuppressionEntryMapper suppressionEntryMapper) {
         this.mongoTemplate = mongoTemplate;
@@ -60,13 +59,13 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
      */
     @Override
     public ConfigurationSetModel createNewConfigurationSet(CreateConfigurationSetDTO createConfigurationSetPayload,UUID tenantId ,boolean force) throws ConfigurationSetAlreadyExists {
-        if(!force || isConfigurationSetExists(createConfigurationSetPayload.configurationSetName(), tenantId)){
+        if(force || isConfigurationSetExists(createConfigurationSetPayload.configurationSetName(), tenantId)){
             throw new ConfigurationSetAlreadyExists("Configuration set already exists");
         }
         if(createConfigurationSetPayload.suppressionEntryIds() != null && !createConfigurationSetPayload.suppressionEntryIds().isEmpty()){
             List<UUID> suppressionIdsNotPresent = this.getSuppressionIdsNotPresent(createConfigurationSetPayload.suppressionEntryIds());
             if(!suppressionIdsNotPresent.isEmpty()){
-                throw new SuppressionListNotFound("Suppression list not found");
+                log.error("Suppression entry ids not present, ids={}", suppressionIdsNotPresent);
             }
         }
         UUID configurationSetId = UUID.randomUUID();
@@ -75,7 +74,7 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
                 .tenantId(tenantId)
                 .configurationSetName(createConfigurationSetPayload.configurationSetName())
                 .configurationSetDescription(createConfigurationSetPayload.configurationSetDescription())
-                .suppressionListIds(createConfigurationSetPayload.suppressionEntryIds())
+                .suppressionListIds(createConfigurationSetPayload.suppressionEntryIds().stream().map(UUID::toString).collect(Collectors.toList()))
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
                 .build();
@@ -117,7 +116,7 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
         if(configurationSetDocuments.isEmpty()){
             return List.of();
         }else{
-            return configurationSetDocuments.stream().map(s -> configurationMapper.toConfigurationSetModel(s)).toList();
+            return configurationSetDocuments.stream().map(configurationMapper::toConfigurationSetModel).toList();
         }
     }
 
@@ -130,8 +129,8 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
      */
     private ConfigurationSetAggregationModel getConfigurationSetMasterDocumentById(UUID configurationSetId) throws ConfigurationSetNotFound {
         Aggregation configurationSetAggregation = Aggregation.newAggregation(
-                Aggregation.match(Criteria.where("id").is(configurationSetId)),
-                Aggregation.lookup(COLLECTION_SUPPRESSION_LIST, "suppressionListIds", "id", "suppressionEntries")
+                Aggregation.match(Criteria.where("_id").is(configurationSetId.toString())),
+                Aggregation.lookup(COLLECTION_SUPPRESSION_LIST, "suppressionListIds", "_id", "suppressionEntries")
         );
        return this.mongoTemplate.aggregate(configurationSetAggregation, COLLECTION_CONFIGURATION_SETS, ConfigurationSetAggregationModel.class).getMappedResults().getFirst();
     }
@@ -196,7 +195,7 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
      */
     @Override
     public List<SuppressionEntryModel> getAllSuppressionEntriesById(List<UUID> suppressionEntryId) throws SuppressionListNotFound {
-        Query suppressionEntrySearchQuery = Query.query(Criteria.where("id").in(suppressionEntryId));
+        Query suppressionEntrySearchQuery = Query.query(Criteria.where("id").in(suppressionEntryId.stream().map(UUID::toString).toList()));
         List<SuppressionEntryModel> matchedSuppressionEntries = this.mongoTemplate.find(suppressionEntrySearchQuery, SuppressionEntryDocument.class, COLLECTION_SUPPRESSION_LIST)
                 .stream().map(this::mapSuppressionEntryDocumentToModel).toList();
         if(matchedSuppressionEntries.isEmpty()){
@@ -215,9 +214,9 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
     public SuppressionEntryModel createSuppressionEntry(CreateSuppressionEntryDTO createSuppressionEntryPayload) {
         SuppressionEntryDocument suppressionEntryDocument = SuppressionEntryDocument.builder()
                 .id(UUID.randomUUID().toString())
-                .entryType(createSuppressionEntryPayload.getEntryType())
-                .value(createSuppressionEntryPayload.getSuppressionEntryValue())
-                .reason(createSuppressionEntryPayload.getReason())
+                .entryType(createSuppressionEntryPayload.entryType())
+                .value(createSuppressionEntryPayload.value())
+                .reason(createSuppressionEntryPayload.reason())
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
                 .build();
@@ -271,7 +270,7 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
      *
      * @param suppressionEntryIds The list of suppression entry IDs to delete.
      */
-    private void deleteSuppressionEntryByIds(List<UUID> suppressionEntryIds){
+    private void deleteSuppressionEntryByIds(List<String> suppressionEntryIds){
         Query suppressionEntrySearchQuery = Query.query(Criteria.where("id").in(suppressionEntryIds));
         this.mongoTemplate.remove(suppressionEntrySearchQuery, SuppressionEntryDocument.class, COLLECTION_SUPPRESSION_LIST);
         log.debug("Deleted suppression entries with IDs: {}", suppressionEntryIds);
@@ -293,7 +292,7 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
      * @return A list of UUIDs representing the suppression IDs that are not present in the database.
      */
     private List<UUID> getSuppressionIdsNotPresent(List<UUID> idsToValidate){
-        List<UUID> idsMatchedInDB = this.getAllSuppressionEntriesById(idsToValidate).stream().map(SuppressionEntryModel::getSuppressionEntryId).toList();
+        List<UUID> idsMatchedInDB = this.getAllSuppressionEntriesById(idsToValidate).stream().map(SuppressionEntryModel::suppressionEntryId).toList();
         return idsToValidate.stream().filter(id -> !idsMatchedInDB.contains(id)).toList();
     }
     /**
@@ -309,9 +308,9 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
      * This method is scheduled to run daily at midnight.
      */
     private void triggerUnusedSuppressionList(){
-        Set<UUID> allSuppressionListIds = this.mongoTemplate.findAll(ConfigurationSetMasterDocument.class, COLLECTION_CONFIGURATION_SETS).stream().map(ConfigurationSetMasterDocument::getSuppressionListIds).flatMap(List::stream).collect(Collectors.toSet());
-        Set<UUID> allSuppressionIds = this.mongoTemplate.findAll(SuppressionEntryDocument.class, COLLECTION_SUPPRESSION_LIST).stream().map(SuppressionEntryDocument::getId).map(UUID::fromString).collect(Collectors.toSet());
-        Set<UUID> unusedSuppressionIds = allSuppressionIds.stream().filter(id -> !allSuppressionListIds.contains(id)).collect(Collectors.toSet());
+        Set<String> allSuppressionListIds = this.mongoTemplate.findAll(ConfigurationSetMasterDocument.class, COLLECTION_CONFIGURATION_SETS).stream().map(ConfigurationSetMasterDocument::getSuppressionListIds).flatMap(List::stream).collect(Collectors.toSet());
+        Set<String> allSuppressionIds = this.mongoTemplate.findAll(SuppressionEntryDocument.class, COLLECTION_SUPPRESSION_LIST).stream().map(SuppressionEntryDocument::getId).collect(Collectors.toSet());
+        Set<String> unusedSuppressionIds = allSuppressionIds.stream().filter(id -> !allSuppressionListIds.contains(id)).collect(Collectors.toSet());
         this.deleteSuppressionEntryByIds(unusedSuppressionIds.stream().toList());
     }
 

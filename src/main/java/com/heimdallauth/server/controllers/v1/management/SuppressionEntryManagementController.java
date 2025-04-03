@@ -40,7 +40,7 @@ public class SuppressionEntryManagementController {
     @PostMapping
     public ResponseEntity<SuppressionEntryModel> createNewSuppressionEntry(@RequestBody CreateSuppressionEntryDTO createSuppressionEntryDTO) throws SuppressionListNotFound {
         SuppressionEntryModel createdSuppressionEntry = this.emailSuppressionManagementService.createSuppressionEntry(createSuppressionEntryDTO);
-        return ResponseEntity.created(ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(createdSuppressionEntry.getSuppressionEntryId()).toUri()).build();
+        return ResponseEntity.created(ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(createdSuppressionEntry.suppressionEntryId()).toUri()).build();
     }
     @PreAuthorize("hasRole(@heimdallBifrostRoleConfiguration.ROLE_MANAGEMENT_WRITE)")
     @DeleteMapping("/{suppressionEntryId}")
