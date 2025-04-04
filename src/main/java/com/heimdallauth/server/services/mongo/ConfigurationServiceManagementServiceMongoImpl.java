@@ -122,7 +122,7 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
 
     @Override
     public void deleteConfigurationSetById(UUID configurationSetId) {
-        Query deleteConfigurationSetQuery = Query.query(Criteria.where("id").is(configurationSetId.toString()));
+        Query deleteConfigurationSetQuery = Query.query(Criteria.where("_id").is(configurationSetId.toString()));
         DeleteResult deleteResult = this.mongoTemplate.remove(deleteConfigurationSetQuery, COLLECTION_CONFIGURATION_SETS);
         log.debug("Deleted configuration set with ID: {}. Deleted count: {}", configurationSetId, deleteResult.getDeletedCount());
     }
