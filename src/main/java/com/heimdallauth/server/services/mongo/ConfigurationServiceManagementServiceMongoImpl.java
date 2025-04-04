@@ -111,6 +111,14 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
         return null;
     }
 
+    /**
+     * Update the status of a configuration set.
+     *
+     * @param configurationSetId The ID of the configuration set to update.
+     * @param isEnabled The new status to set for the configuration set.
+     * @return The updated ConfigurationSetModel.
+     * @throws ConfigurationSetNotFound If no configuration set is found for the given ID.
+     */
     @Override
     public ConfigurationSetModel updateConfigurationSetStatus(UUID configurationSetId, boolean isEnabled) throws ConfigurationSetNotFound {
         Query configurationSetSearchQuery = Query.query(Criteria.where("_id").is(configurationSetId.toString()));
@@ -128,6 +136,12 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
         return null;
     }
 
+    /**
+     * Get all configuration sets for a given tenant ID.
+     *
+     * @param tenantId The ID of the tenant to retrieve configuration sets for.
+     * @return A list of ConfigurationSetModel objects associated with the given tenant ID.
+     */
     @Override
     public List<ConfigurationSetModel> getConfigurationSetsForTenantId(UUID tenantId) {
         Query searchConfigurationSetForTenantQuery = Query.query(Criteria.where("tenantId").is(tenantId.toString()));
@@ -139,6 +153,11 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
         }
     }
 
+    /**
+     * Delete a configuration set by its ID.
+     *
+     * @param configurationSetId The ID of the configuration set to delete.
+     */
     @Override
     public void deleteConfigurationSetById(UUID configurationSetId) {
         Query deleteConfigurationSetQuery = Query.query(Criteria.where("_id").is(configurationSetId.toString()));
@@ -210,6 +229,11 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
         }
     }
 
+    /**
+     * Get all suppression entries.
+     *
+     * @return A list of SuppressionEntryModel objects representing all suppression entries.
+     */
     @Override
     public List<SuppressionEntryModel> getAllSuppressionEntries() {
         List<SuppressionEntryDocument> allEntriesDocuments  = this.mongoTemplate.findAll(SuppressionEntryDocument.class, COLLECTION_SUPPRESSION_LIST);
