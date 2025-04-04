@@ -43,4 +43,9 @@ public class ConfigurationSetManagementController {
         this.configurationSetManagementService.deleteConfigurationSetById(configurationSetId);
         return ResponseEntity.ok().build();
     }
+    @PutMapping("/{configurationSetId}/status")
+    @PreAuthorize("hasRole(@heimdallBifrostRoleConfiguration.ROLE_MANAGEMENT_WRITE)")
+    public ResponseEntity<ConfigurationSetModel> updateConfigurationSetStatus(@PathVariable("configurationSetId") UUID configurationSetId, @RequestParam("isEnabled") boolean isEnabled){
+        return ResponseEntity.ok(this.configurationSetManagementService.updateConfigurationSetStatus(configurationSetId, isEnabled));
+    }
 }

@@ -120,7 +120,7 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
             throw new ConfigurationSetNotFound("Multiple configuration sets found with the same ID");
         }
         Update updateSpec = Update.update("isEnabled", isEnabled);
-        UpdateResult result = this.mongoTemplate.updateMulti(configurationSetSearchQuery, updateSpec, ConfigurationSetMasterDocument.class);
+        UpdateResult result = this.mongoTemplate.updateMulti(configurationSetSearchQuery, updateSpec, ConfigurationSetMasterDocument.class, COLLECTION_CONFIGURATION_SETS);
         if (result.getModifiedCount() > 0) {
             log.debug("Updated configuration set with ID: {}. Updated count: {}", configurationSetId, result.getModifiedCount());
             return this.getConfigurationSetById(configurationSetId);
