@@ -12,5 +12,6 @@ public interface ConfigurationMapper {
 
     @Mapping(source = "configurationId", target = "configurationSetId")
     ConfigurationSetModel toConfigurationSetModel(ConfigurationSetAggregationModel aggregationModel);
+    @Mapping(source = "configurationId", target = "configurationSetId")
     ConfigurationSetModel toConfigurationSetModel(ConfigurationSetMasterDocument masterDocument);
 }
