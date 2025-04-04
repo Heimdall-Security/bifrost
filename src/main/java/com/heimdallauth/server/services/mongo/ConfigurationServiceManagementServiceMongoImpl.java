@@ -111,7 +111,7 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
 
     @Override
     public List<ConfigurationSetModel> getConfigurationSetsForTenantId(UUID tenantId) {
-        Query searchConfigurationSetForTenantQuery = Query.query(Criteria.where("tenantId").is(tenantId));
+        Query searchConfigurationSetForTenantQuery = Query.query(Criteria.where("tenantId").is(tenantId.toString()));
         List<ConfigurationSetMasterDocument> configurationSetDocuments = this.mongoTemplate.find(searchConfigurationSetForTenantQuery, ConfigurationSetMasterDocument.class, COLLECTION_CONFIGURATION_SETS);
         if(configurationSetDocuments.isEmpty()){
             return List.of();
