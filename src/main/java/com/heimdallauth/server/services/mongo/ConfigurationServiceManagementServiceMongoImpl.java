@@ -124,7 +124,11 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
     public void deleteConfigurationSetById(UUID configurationSetId) {
         Query deleteConfigurationSetQuery = Query.query(Criteria.where("_id").is(configurationSetId.toString()));
         DeleteResult deleteResult = this.mongoTemplate.remove(deleteConfigurationSetQuery, COLLECTION_CONFIGURATION_SETS);
-        log.debug("Deleted configuration set with ID: {}. Deleted count: {}", configurationSetId, deleteResult.getDeletedCount());
+        if(deleteResult.getDeletedCount() > 0){
+            log.debug("Deleted configuration set with ID: {}. Deleted count: {}", configurationSetId, deleteResult.getDeletedCount());
+        }else{
+            log.error("No instances matched, Nothing to delete. Deleted count: {}", 0);
+        }
     }
 
     /**
