@@ -71,7 +71,7 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
         UUID configurationSetId = UUID.randomUUID();
         ConfigurationSetMasterDocument configurationSetMasterDocument = ConfigurationSetMasterDocument.builder()
                 .configurationId(configurationSetId.toString())
-                .tenantId(tenantId)
+                .tenantId(tenantId.toString())
                 .configurationSetName(createConfigurationSetPayload.configurationSetName())
                 .configurationSetDescription(createConfigurationSetPayload.configurationSetDescription())
                 .suppressionListIds(createConfigurationSetPayload.suppressionEntryIds().stream().map(UUID::toString).collect(Collectors.toList()))
