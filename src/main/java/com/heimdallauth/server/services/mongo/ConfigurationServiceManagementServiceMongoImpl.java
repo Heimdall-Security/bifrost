@@ -15,6 +15,7 @@ import com.heimdallauth.server.services.EmailSuppressionManagementService;
 import com.heimdallauth.server.utils.mapper.ConfigurationMapper;
 import com.heimdallauth.server.utils.mapper.SuppressionEntryMapper;
 import com.mongodb.client.result.DeleteResult;
+import com.mongodb.client.result.UpdateResult;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
@@ -106,6 +107,23 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
         ConfigurationSetAggregationModel aggregationResult = getConfigurationSetMasterDocumentById(configurationSetId);
         if(aggregationResult != null){
             return configurationMapper.toConfigurationSetModel(aggregationResult);
+        }
+        return null;
+    }
+
+    @Override
+    public ConfigurationSetModel updateConfigurationSetStatus(UUID configurationSetId, boolean isEnabled) throws ConfigurationSetNotFound {
+        Query configurationSetSearchQuery = Query.query(Criteria.where("_id").is(configurationSetId.toString()));
+        long matchedCount = this.mongoTemplate.count(configurationSetSearchQuery, ConfigurationSetMasterDocument.class, COLLECTION_CONFIGURATION_SETS);
+        if (matchedCount > 1) {
+            log.error("Multiple configuration sets found with the same ID: {}", configurationSetId);
+            throw new ConfigurationSetNotFound("Multiple configuration sets found with the same ID");
+        }
+        Update updateSpec = Update.update("isEnabled", isEnabled);
+        UpdateResult result = this.mongoTemplate.updateMulti(configurationSetSearchQuery, updateSpec, ConfigurationSetMasterDocument.class);
+        if (result.getModifiedCount() > 0) {
+            log.debug("Updated configuration set with ID: {}. Updated count: {}", configurationSetId, result.getModifiedCount());
+            return this.getConfigurationSetById(configurationSetId);
         }
         return null;
     }
