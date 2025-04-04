@@ -12,6 +12,7 @@ public interface ConfigurationSetManagementService {
     ConfigurationSetModel createNewConfigurationSet(CreateConfigurationSetDTO createConfigurationSetPayload, UUID tenantID, boolean force) throws ConfigurationSetAlreadyExists;
     ConfigurationSetModel getConfigurationSetById(UUID configurationSetId) throws ConfigurationSetNotFound;
     List<ConfigurationSetModel> getConfigurationSetsForTenantId(UUID tenantId);
+    void deleteConfigurationSetById(UUID configurationSetId);
     ConfigurationSetModel getConfigurationSetByNameAndTenantId(String configurationSetName, String tenantId) throws ConfigurationSetNotFound;
     ConfigurationSetModel updateConfigurationSetMasterData(String configurationSetId, String configurationSetName, String configurationSetDescription) throws ConfigurationSetNotFound;
 }
