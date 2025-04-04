@@ -1,0 +1,31 @@
+server:
+  port: 8080
+spring:
+  cloud:
+    consul:
+      discovery:
+        enabled: true
+        health-check-path: /actuator/health
+        health-check-interval: 15s
+        health-check-timeout: 10s
+      host: localhost
+      port: 8500
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${SECURITY_TOKEN_ISSUER}
+heimdall:
+  bifrost:
+    security:
+      oauth2:
+        roles:
+          role-management-read: READ:MANAGEMENT
+          role-management-write: WRITE:MANAGEMENT
+        client:
+          client-id: ${OAUTH_CLIENT_ID}
+
+logging:
+  level:
+    org.springframework.security: TRACE

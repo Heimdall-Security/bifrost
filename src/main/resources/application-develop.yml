@@ -1,0 +1,30 @@
+spring:
+  cloud:
+    consul:
+      discovery:
+        enabled: true
+        health-check-path: /actuator/health
+        hostname: ${PUBLIC_FQDN}
+        health-check-interval: 15s
+        health-check-timeout: 10s
+      host: ${CONSUL_FQDN}
+      port: 443
+      scheme: https
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${SECURITY_TOKEN_ISSUER}
+heimdall:
+  bifrost:
+    security:
+      oauth2:
+        roles:
+          role-management-read: READ:MANAGEMENT
+          role-management-write: WRITE:MANAGEMENT
+        client:
+          client-id: ${OAUTH_CLIENT_ID}
+
+logging:
+  level:
+    org.springframework.security: DEBUG
