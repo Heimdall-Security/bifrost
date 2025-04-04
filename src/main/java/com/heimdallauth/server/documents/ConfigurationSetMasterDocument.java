@@ -22,7 +22,7 @@ public class ConfigurationSetMasterDocument {
     private String configurationSetName;
     private String configurationSetDescription;
     @Indexed
-    private UUID tenantId;
+    private String tenantId;
     @Indexed
     private List<String> suppressionListIds;
     private Instant createdAt;
