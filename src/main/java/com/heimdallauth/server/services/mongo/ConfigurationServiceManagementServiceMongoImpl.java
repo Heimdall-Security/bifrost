@@ -72,6 +72,7 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
         ConfigurationSetMasterDocument configurationSetMasterDocument = ConfigurationSetMasterDocument.builder()
                 .configurationId(configurationSetId.toString())
                 .tenantId(tenantId.toString())
+                .isEnabled(false)
                 .configurationSetName(createConfigurationSetPayload.configurationSetName())
                 .configurationSetDescription(createConfigurationSetPayload.configurationSetDescription())
                 .suppressionListIds(createConfigurationSetPayload.suppressionEntryIds().stream().map(UUID::toString).collect(Collectors.toList()))
