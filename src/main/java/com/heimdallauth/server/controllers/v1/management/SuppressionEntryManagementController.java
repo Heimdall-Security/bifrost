@@ -1,6 +1,5 @@
 package com.heimdallauth.server.controllers.v1.management;
 
-import com.heimdallauth.server.configuration.HeimdallBifrostRoleConfiguration;
 import com.heimdallauth.server.dto.bifrost.CreateSuppressionEntryDTO;
 import com.heimdallauth.server.exceptions.SuppressionListNotFound;
 import com.heimdallauth.server.models.bifrost.SuppressionEntryModel;
