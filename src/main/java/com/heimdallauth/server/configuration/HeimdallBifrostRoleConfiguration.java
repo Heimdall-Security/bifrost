@@ -27,6 +27,10 @@ public class HeimdallBifrostRoleConfiguration {
     private String SCOPE_MANAGEMENT_READ;
     private String SCOPE_MANAGEMENT_WRITE;
 
+    /**
+     * This method is used to update the scope mapping for the roles.
+     * It will add the prefix "SCOPE_" to the roles that do not already have it.
+     */
     @PostConstruct
     private void updateScopeMapping(){
         Field[] fields = this.getClass().getDeclaredFields();
