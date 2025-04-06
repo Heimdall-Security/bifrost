@@ -5,7 +5,6 @@ import com.heimdallauth.server.exceptions.SuppressionListNotFound;
 import com.heimdallauth.server.models.bifrost.SuppressionEntryModel;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 public interface EmailSuppressionManagementService {
