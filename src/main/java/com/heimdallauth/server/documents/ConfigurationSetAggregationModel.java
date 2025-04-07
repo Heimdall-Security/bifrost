@@ -1,6 +1,5 @@
 package com.heimdallauth.server.documents;
 
-import com.heimdallauth.server.models.bifrost.SmtpProperties;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

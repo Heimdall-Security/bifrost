@@ -27,7 +27,7 @@ public class SuppressionEntryManagementController {
 
     @GetMapping
     @PreAuthorize("hasRole(@heimdallBifrostRoleConfiguration.ROLE_MANAGEMENT_SUPPRESSION_ENTRY_READ)")
-    public ResponseEntity<List<SuppressionEntryModel>> getAllSuppressionEntries(){
+    public ResponseEntity<List<SuppressionEntryModel>> getAllSuppressionEntries() {
         return ResponseEntity.ok(emailSuppressionManagementService.getAllSuppressionEntries());
     }
 

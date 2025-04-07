@@ -20,18 +20,21 @@ public class SmtpPropertiesManagementController {
     public SmtpPropertiesManagementController(SmtpPropertiesManagementService smtpPropertiesManagementService) {
         this.smtpPropertiesManagementService = smtpPropertiesManagementService;
     }
+
     @PostMapping("/create")
     @PreAuthorize("hasRole(@heimdallBifrostRoleConfiguration.ROLE_MANAGEMENT_SMTP_WRITE)")
     public ResponseEntity<Void> createNewSmtpProperties(@RequestParam("configurationSetId") UUID configurationSetId, @RequestBody CreateSmtpPropertiesDTO createSmtpPropertiesDTO) throws ConfigurationSetNotFound {
         this.smtpPropertiesManagementService.createSmtpProperties(configurationSetId, createSmtpPropertiesDTO);
         return ResponseEntity.ok().build();
     }
+
     @PutMapping("/update/{configurationSetId}")
     @PreAuthorize("hasRole(@heimdallBifrostRoleConfiguration.ROLE_MANAGEMENT_SMTP_WRITE)")
     public ResponseEntity<Void> updateSmtpProperties(@PathVariable("configurationSetId") UUID configurationSetId, @RequestBody SmtpProperties smtpProperties) throws ConfigurationSetNotFound {
         this.smtpPropertiesManagementService.updateSmtpProperties(configurationSetId, smtpProperties);
         return ResponseEntity.ok().build();
     }
+
     @DeleteMapping
     @PreAuthorize("hasRole(@heimdallBifrostRoleConfiguration.ROLE_MANAGEMENT_SMTP_WRITE)")
     public ResponseEntity<Void> deleteSmtpProperties(@RequestParam("configurationSetId") UUID configurationSetId) throws ConfigurationSetNotFound {

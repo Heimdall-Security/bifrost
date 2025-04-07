@@ -31,21 +31,22 @@ public class KeycloakJwtAuthoritiesConverter implements Converter<Jwt, Collectio
         Stream<GrantedAuthority> realmRoles = extractRealmRoles(source);
         Stream<GrantedAuthority> resourceAccessRoles = extractResourceAccessRoles(source);
         Stream<GrantedAuthority> scopeClaims = extractScopeClaim(source);
-        return Stream.concat(Stream.concat(realmRoles,resourceAccessRoles), scopeClaims).collect(Collectors.toSet());
+        return Stream.concat(Stream.concat(realmRoles, resourceAccessRoles), scopeClaims).collect(Collectors.toSet());
     }
 
-    private Stream<GrantedAuthority> extractRealmRoles(Jwt authToken){
+    private Stream<GrantedAuthority> extractRealmRoles(Jwt authToken) {
         Map<String, Object> realmAccess = authToken.getClaimAsMap(REALM_ACCESS_CLAIM);
         return getGrantedAuthorityStream(realmAccess);
     }
+
     @SuppressWarnings("unchecked")
-    private Stream<GrantedAuthority> extractResourceAccessRoles(Jwt authToken){
+    private Stream<GrantedAuthority> extractResourceAccessRoles(Jwt authToken) {
         Map<String, Object> resourceAccess = authToken.getClaimAsMap(RESOURCE_ACCESS_CLAIM);
-        if(resourceAccess == null){
+        if (resourceAccess == null) {
             return Stream.empty();
         }
         Stream<Map.Entry<String, Object>> resourceEntriesStream;
-        if(CLIENT_ID != null){
+        if (CLIENT_ID != null) {
             resourceEntriesStream = resourceAccess.entrySet().stream().filter(entry -> CLIENT_ID.equals(entry.getKey()) && entry.getValue() instanceof Map);
         } else {
             resourceEntriesStream = resourceAccess.entrySet().stream().filter(entry -> entry.getValue() instanceof Map);
@@ -53,7 +54,7 @@ public class KeycloakJwtAuthoritiesConverter implements Converter<Jwt, Collectio
         return resourceEntriesStream.flatMap(
                 entry -> {
                     Map<String, Object> clientRolesClaims = (Map<String, Object>) entry.getValue();
-                    if(clientRolesClaims.isEmpty()){
+                    if (clientRolesClaims.isEmpty()) {
                         return Stream.empty();
                     }
                     return getGrantedAuthorityStream(clientRolesClaims);
@@ -61,17 +62,18 @@ public class KeycloakJwtAuthoritiesConverter implements Converter<Jwt, Collectio
         );
     }
 
-    private Stream<GrantedAuthority> extractScopeClaim(Jwt authToken){
+    private Stream<GrantedAuthority> extractScopeClaim(Jwt authToken) {
         String scopeClaim = authToken.getClaimAsString(SCOPE_CLAIM);
-        if(scopeClaim == null){
+        if (scopeClaim == null) {
             return Stream.empty();
         }
         return Stream.of(scopeClaim.split("\\s+")).map(roleEntry -> String.format("SCOPE_%s", roleEntry)).map(String::toUpperCase).map(SimpleGrantedAuthority::new);
     }
+
     @NotNull
     @SuppressWarnings("unchecked")
     private Stream<GrantedAuthority> getGrantedAuthorityStream(Map<String, Object> clientRoles) {
-        if(clientRoles == null){
+        if (clientRoles == null) {
             return Stream.empty();
         }
         Collection<String> roles = (Collection<String>) clientRoles.get(ROLES_CLAIM);

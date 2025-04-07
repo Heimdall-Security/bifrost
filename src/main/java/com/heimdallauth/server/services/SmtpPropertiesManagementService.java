@@ -10,6 +10,8 @@ import java.util.UUID;
 
 public interface SmtpPropertiesManagementService {
     void createSmtpProperties(UUID configurationSetId, CreateSmtpPropertiesDTO smtpProperties) throws ConfigurationSetNotFound, SmtpPropertiesExist;
+
     void updateSmtpProperties(UUID configurationSetId, SmtpProperties smtpProperties) throws ConfigurationSetNotFound;
+
     void deleteSmtpProperties(UUID configurationSetId) throws ConfigurationSetNotFound;
 }
