@@ -68,22 +68,19 @@ public class JavaMailSenderFactory {
         log.debug("Configuring JavaMailSender from DataSource");
         try{
             Optional<ConfigurationSetModel> configurationSetModel = Optional.ofNullable(this.configurationSetManagementService.getConfigurationSetById(configurationId));
-            configurationSetModel.ifPresentOrElse(
-                    configuration -> {
-                        SmtpProperties smtpProperties = configuration.smtpProperties();
-                        JavaMailSender javaMailSender = getJavaMailSender(smtpProperties);
-                        mailSenderCache.put(configurationId.toString(), javaMailSender);
-
-                    },
-                    () -> {
-                        throw new ConfigurationSetNotFound("Configuration set not found for id: " + configurationId);
-                    }
-            );
+            if(configurationSetModel.isPresent()){
+                SmtpProperties smtpProperties = configurationSetModel.get().smtpProperties();
+                if(smtpProperties == null) {
+                    log.debug("SMTP Properties not found. Using default platform mail sender");
+                    return platformJavaMailSender;
+                }
+                return getJavaMailSender(smtpProperties);
+            }
         }catch (ConfigurationSetNotFound ex){
             log.debug("SMTP Properties not found. Using default platform mail sender");
             return platformJavaMailSender;
         }
-        return mailSenderCache.getIfPresent(configurationId.toString());
+        return null; //Unreachable Code
     }
     /**
      * This method retrieves a JavaMailSender instance based on the provided configurationId.
