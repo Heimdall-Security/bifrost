@@ -16,7 +16,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/management/suppression-entry")
-@Tag(name = "Suppression Entry Management Controller", description = "Controller for managing suppression entries")
+@Tag(name = "ManagementController", description = "Controller for Managing Configuration for Service")
 public class SuppressionEntryManagementController {
     private final EmailSuppressionManagementService emailSuppressionManagementService;
 

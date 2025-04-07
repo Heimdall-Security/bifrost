@@ -23,6 +23,8 @@ public class HeimdallBifrostRoleConfiguration {
     private String ROLE_MANAGEMENT_SUPPRESSION_ENTRY_WRITE;
     private String ROLE_MANAGEMENT_CONFIGURATION_SET_READ;
     private String ROLE_MANAGEMENT_CONFIGURATION_SET_WRITE;
+    private String ROLE_MANAGEMENT_SMTP_READ;
+    private String ROLE_MANAGEMENT_SMTP_WRITE;
     //Management API Scope
     private String SCOPE_MANAGEMENT_READ;
     private String SCOPE_MANAGEMENT_WRITE;

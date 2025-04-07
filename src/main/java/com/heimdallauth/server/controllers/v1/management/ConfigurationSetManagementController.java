@@ -14,7 +14,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/management/configuration-set")
-@Tag(name = "Configuration Set Management Controller", description = "Controller for managing configuration sets")
+@Tag(name = "ManagementController", description = "Controller for Managing Configuration for Service")
 public class ConfigurationSetManagementController {
     private final ConfigurationSetManagementService configurationSetManagementService;
 
