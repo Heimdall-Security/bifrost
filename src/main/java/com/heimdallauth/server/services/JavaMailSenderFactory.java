@@ -1,5 +1,7 @@
 package com.heimdallauth.server.services;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.heimdallauth.server.constants.bifrost.SmtpAuthenticationMethod;
 import com.heimdallauth.server.exceptions.ConfigurationSetNotFound;
 import com.heimdallauth.server.models.bifrost.ConfigurationSetModel;
@@ -9,36 +11,22 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @Slf4j
 public class JavaMailSenderFactory {
     private final JavaMailSender platformJavaMailSender;
     private final ConfigurationSetManagementService configurationSetManagementService;
-    private final Map<String, JavaMailSender> javaMailSenderMap;
-
+    private final Cache<String, JavaMailSender> mailSenderCache;
 
     public JavaMailSenderFactory(JavaMailSender platformJavaMailSender, ConfigurationSetManagementService configurationSetManagementService) {
         this.configurationSetManagementService = configurationSetManagementService;
         this.platformJavaMailSender = platformJavaMailSender;
-        this.javaMailSenderMap = new HashMap<>();
-    }
-
-    private JavaMailSender getPlatformJavaMailSender() {
-        return getJavaMailSender(new SmtpProperties(
-                "smtp.example.com",
-                25,
-                "username",
-                "password",
-                "noreply@local.heimdallauth.com",
-                "",
-                SmtpAuthenticationMethod.NONE,
-                10,
-                1000,
-                true,
-                Collections.emptyMap()
-        ));
+        this.mailSenderCache = Caffeine.newBuilder().expireAfterWrite(10,TimeUnit.MINUTES).maximumSize(1000).build();
     }
     /**
      * This method creates a JavaMailSender instance based on the provided SmtpProperties.
@@ -84,7 +72,7 @@ public class JavaMailSenderFactory {
                     configuration -> {
                         SmtpProperties smtpProperties = configuration.smtpProperties();
                         JavaMailSender javaMailSender = getJavaMailSender(smtpProperties);
-                        javaMailSenderMap.put(configurationId.toString(), javaMailSender);
+                        mailSenderCache.put(configurationId.toString(), javaMailSender);
 
                     },
                     () -> {
@@ -95,7 +83,7 @@ public class JavaMailSenderFactory {
             log.debug("SMTP Properties not found. Using default platform mail sender");
             return platformJavaMailSender;
         }
-        return javaMailSenderMap.get(configurationId.toString());
+        return mailSenderCache.getIfPresent(configurationId.toString());
     }
     /**
      * This method retrieves a JavaMailSender instance based on the provided configurationId.
@@ -110,8 +98,9 @@ public class JavaMailSenderFactory {
             log.debug("Configuration ID is null. Using default platform mail sender");
             return platformJavaMailSender;
         }
-        // Check if present in cache map
-        //TODO Implement with caffeine library later
-        return javaMailSenderMap.getOrDefault(configurationId.toString(), configureMailSenderFromDataSource(configurationId));
+        return mailSenderCache.get(configurationId.toString(), key -> {
+            log.debug("JavaMailSender not found in cache. Configuring a new one.");
+            return configureMailSenderFromDataSource(configurationId);
+        });
     }
 }
