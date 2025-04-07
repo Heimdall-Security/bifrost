@@ -23,6 +23,10 @@ heimdall:
         roles:
           role-management-read: READ:MANAGEMENT
           role-management-write: WRITE:MANAGEMENT
+          role-management-configuration-set-read: READ:MANAGEMENT:CONFIGURATION-SET
+          role-management-configuration-set-write: READ:MANAGEMENT:CONFIGURATION-SET
+          role-management-suppression-entry-read: READ:MANAGEMENT:SUPPRESSION-ENTRIES
+          role-management-suppression-entry-write: READ:MANAGEMENT:SUPPRESSION-ENTRY
         client:
           client-id: ${OAUTH_CLIENT_ID}
 

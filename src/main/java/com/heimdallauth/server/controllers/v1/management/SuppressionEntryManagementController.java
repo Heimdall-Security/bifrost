@@ -1,6 +1,5 @@
 package com.heimdallauth.server.controllers.v1.management;
 
-import com.heimdallauth.server.configuration.HeimdallBifrostRoleConfiguration;
 import com.heimdallauth.server.dto.bifrost.CreateSuppressionEntryDTO;
 import com.heimdallauth.server.exceptions.SuppressionListNotFound;
 import com.heimdallauth.server.models.bifrost.SuppressionEntryModel;
@@ -27,23 +26,26 @@ public class SuppressionEntryManagementController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole(@heimdallBifrostRoleConfiguration.ROLE_MANAGEMENT_READ) or hasRole(@heimdallBifrostRoleConfiguration.ROLE_MANAGEMENT_WRITE)")
+    @PreAuthorize("hasRole(@heimdallBifrostRoleConfiguration.ROLE_MANAGEMENT_SUPPRESSION_ENTRY_READ)")
     public ResponseEntity<List<SuppressionEntryModel>> getAllSuppressionEntries(){
         return ResponseEntity.ok(emailSuppressionManagementService.getAllSuppressionEntries());
     }
-    @PreAuthorize("hasRole(@heimdallBifrostRoleConfiguration.ROLE_MANAGEMENT_READ) or hasRole(@heimdallBifrostRoleConfiguration.ROLE_MANAGEMENT_WRITE)")
+
     @GetMapping("/{suppressionEntryId}")
+    @PreAuthorize("hasRole(@heimdallBifrostRoleConfiguration.ROLE_MANAGEMENT_SUPPRESSION_ENTRY_READ)")
     public ResponseEntity<SuppressionEntryModel> getSuppressionEntryById(@PathVariable UUID suppressionEntryId) throws SuppressionListNotFound {
         return ResponseEntity.ok(this.emailSuppressionManagementService.getSuppressionEntryById(suppressionEntryId));
     }
-    @PreAuthorize("hasRole(@heimdallBifrostRoleConfiguration.ROLE_MANAGEMENT_WRITE)")
+
     @PostMapping
+    @PreAuthorize("hasRole(@heimdallBifrostRoleConfiguration.ROLE_MANAGEMENT_SUPPRESSION_ENTRY_WRITE)")
     public ResponseEntity<SuppressionEntryModel> createNewSuppressionEntry(@RequestBody CreateSuppressionEntryDTO createSuppressionEntryDTO) throws SuppressionListNotFound {
         SuppressionEntryModel createdSuppressionEntry = this.emailSuppressionManagementService.createSuppressionEntry(createSuppressionEntryDTO);
         return ResponseEntity.created(ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(createdSuppressionEntry.suppressionEntryId()).toUri()).build();
     }
-    @PreAuthorize("hasRole(@heimdallBifrostRoleConfiguration.ROLE_MANAGEMENT_WRITE)")
+
     @DeleteMapping("/{suppressionEntryId}")
+    @PreAuthorize("hasRole(@heimdallBifrostRoleConfiguration.ROLE_MANAGEMENT_SUPPRESSION_ENTRY_WRITE)")
     public ResponseEntity<Void> deleteSuppressionEntryById(@PathVariable UUID suppressionEntryId) throws SuppressionListNotFound {
         this.emailSuppressionManagementService.deleteSuppressionEntryById(suppressionEntryId);
         return ResponseEntity.ok().build();

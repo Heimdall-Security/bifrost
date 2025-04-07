@@ -22,18 +22,18 @@ public class ConfigurationSetManagementController {
         this.configurationSetManagementService = configurationSetManagementService;
     }
     @GetMapping("/{configurationSetId}")
-    @PreAuthorize("hasRole(@heimdallBifrostRoleConfiguration.ROLE_MANAGEMENT_READ) or hasRole(@heimdallBifrostRoleConfiguration.ROLE_MANAGEMENT_WRITE)")
+    @PreAuthorize("hasRole(@heimdallBifrostRoleConfiguration.ROLE_MANAGEMENT_CONFIGURATION_SET_READ)")
     public ResponseEntity<ConfigurationSetModel> getConfigurationSet(@PathVariable UUID configurationSetId) {
         return ResponseEntity.ok(this.configurationSetManagementService.getConfigurationSetById(configurationSetId));
     }
     @PostMapping("/create")
-    @PreAuthorize("hasRole(@heimdallBifrostRoleConfiguration.ROLE_MANAGEMENT_WRITE)")
+    @PreAuthorize("hasRole(@heimdallBifrostRoleConfiguration.ROLE_MANAGEMENT_CONFIGURATION_SET_WRITE)")
     public ResponseEntity<ConfigurationSetModel> createNewConfigurationSet(@RequestBody CreateConfigurationSetDTO createConfigurationSetDTO, @RequestParam("force") boolean force){
         ConfigurationSetModel createdConfigurationSet = this.configurationSetManagementService.createNewConfigurationSet(createConfigurationSetDTO, createConfigurationSetDTO.tenantId(), force);
         return ResponseEntity.created(ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(createdConfigurationSet.configurationSetId()).toUri()).build();
     }
     @GetMapping
-    @PreAuthorize("hasRole(@heimdallBifrostRoleConfiguration.ROLE_MANAGEMENT_READ) or hasRole(@heimdallBifrostRoleConfiguration.ROLE_MANAGEMENT_WRITE)")
+    @PreAuthorize("hasRole(@heimdallBifrostRoleConfiguration.ROLE_MANAGEMENT_CONFIGURATION_SET_WRITE)")
     public ResponseEntity<List<ConfigurationSetModel>> getConfigurationSetForTenantId(@RequestParam("tenantId") UUID tenantId){
         return ResponseEntity.ok(this.configurationSetManagementService.getConfigurationSetsForTenantId(tenantId));
     }
