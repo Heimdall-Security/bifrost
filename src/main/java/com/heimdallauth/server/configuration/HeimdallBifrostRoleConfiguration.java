@@ -25,6 +25,8 @@ public class HeimdallBifrostRoleConfiguration {
     private String ROLE_MANAGEMENT_CONFIGURATION_SET_WRITE;
     private String ROLE_MANAGEMENT_SMTP_READ;
     private String ROLE_MANAGEMENT_SMTP_WRITE;
+    // Send Email Role
+    private String ROLE_SEND_EMAIL;
     //Management API Scope
     private String SCOPE_MANAGEMENT_READ;
     private String SCOPE_MANAGEMENT_WRITE;
