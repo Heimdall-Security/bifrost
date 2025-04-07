@@ -33,10 +33,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.bson.assertions.Assertions.assertNotNull;
@@ -148,8 +145,8 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
 
     private void updateConfigurationSetSmtpPropertiesId(UUID configurationSetId, UUID smtpPropertiesId) throws ConfigurationSetNotFound {
         Query configurationSetMasterSearchQuery = Query.query(Criteria.where("_id").is(configurationSetId.toString()));
-        Update updateSpec = Update.update("smtpPropertiesId", smtpPropertiesId.toString());
-        UpdateResult mongoUpdateResult = this.mongoTemplate.updateFirst(configurationSetMasterSearchQuery, updateSpec, ConfigurationSetMasterDocument.class, COLLECTION_CONFIGURATION_SETS);
+        Update updateSpec = Update.update("smtpPropertiesId", Objects.nonNull(smtpPropertiesId) ? smtpPropertiesId.toString() : null);
+        UpdateResult mongoUpdateResult = this.mongoTemplate.updateMulti(configurationSetMasterSearchQuery, updateSpec, ConfigurationSetMasterDocument.class, COLLECTION_CONFIGURATION_SETS);
         if(mongoUpdateResult.getModifiedCount() > 0) {
             log.debug("Updated configuration set with ID: {}, Set smtpProperties = {}. Updated count: {}", configurationSetId, smtpPropertiesId, mongoUpdateResult.getModifiedCount());
         }else{
