@@ -190,18 +190,28 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
     /**
      * Get a configuration set by its ID.
      *
-     * @param configurationSetId The ID of the configuration set to retrieve.
+     * @param configurationSetIds The ID of the configuration set to retrieve.
      * @return The ConfigurationSetModel associated with the given ID.
      * @throws ConfigurationSetNotFound If no configuration set is found for the given ID.
      */
-    private ConfigurationSetAggregationModel getConfigurationSetMasterDocumentById(UUID configurationSetId) throws ConfigurationSetNotFound {
+    private List<ConfigurationSetAggregationModel> getConfigurationSetMasterDocumentById(List<UUID> configurationSetIds) throws ConfigurationSetNotFound {
         Aggregation configurationSetAggregation = Aggregation.newAggregation(
-                Aggregation.match(Criteria.where("_id").is(configurationSetId.toString())),
+                Aggregation.match(Criteria.where("_id").in(configurationSetIds.stream().map(UUID::toString).toList())),
                 Aggregation.lookup(COLLECTION_SUPPRESSION_LIST, "suppressionListIds", "_id", "suppressionEntries"),
                 Aggregation.lookup(COLLECTION_SMTP_PROPERTIES, "smtpPropertiesId", "_id", "smtpProperties"),
                 Aggregation.unwind("smtpProperties", true)
         );
-       return this.mongoTemplate.aggregate(configurationSetAggregation, COLLECTION_CONFIGURATION_SETS, ConfigurationSetAggregationModel.class).getMappedResults().getFirst();
+       return this.mongoTemplate.aggregate(configurationSetAggregation, COLLECTION_CONFIGURATION_SETS, ConfigurationSetAggregationModel.class).getMappedResults();
+    }
+    /**
+     * Get a configuration set by its ID.
+     *
+     * @param configurationSetIds The ID of the configuration set to retrieve.
+     * @return The ConfigurationSetModel associated with the given ID.
+     * @throws ConfigurationSetNotFound If no configuration set is found for the given ID.
+     */
+    private ConfigurationSetAggregationModel getConfigurationSetMasterDocumentById(UUID configurationSetIds) throws ConfigurationSetNotFound {
+        return getConfigurationSetMasterDocumentById(List.of(configurationSetIds)).getFirst();
     }
 
     /**
