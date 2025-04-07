@@ -406,6 +406,9 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
                     .authenticationMethod(smtpProperties.authenticationMethod())
                     .emailConnectionType(EmailConnectionType.SMTP)
                     .host(smtpProperties.serverAddress())
+                    .smtpServerLoginUsername(smtpProperties.loginUsername())
+                    .smtpServerLoginPassword(smtpProperties.loginPassword())
+                    .smtpConnectionSecurity(smtpProperties.connectionSecurity())
                     .fromEmailAddress(smtpProperties.fromEmailAddress())
                     .connectionLimit(smtpProperties.connectionLimit())
                     .build();
