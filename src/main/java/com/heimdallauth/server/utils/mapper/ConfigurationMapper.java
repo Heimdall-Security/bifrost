@@ -6,10 +6,11 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
 
-@Mapper(componentModel = MappingConstants.ComponentModel.SPRING, uses = {SmtpPropertiesMapper.class})
+@Mapper(componentModel = MappingConstants.ComponentModel.SPRING, uses = {SmtpPropertiesMapper.class, SuppressionEntryMapper.class})
 public interface ConfigurationMapper {
 
     @Mapping(source = "configurationId", target = "configurationSetId")
+    @Mapping(source = "aggregationModel.suppressionEntries", target = "suppressionEntries", qualifiedByName = "toSuppressionEntryModel")
     @Mapping(source = "aggregationModel.smtpProperties", target = "smtpProperties", qualifiedByName = "toSmtpProperties")
     ConfigurationSetModel toConfigurationSetModel(ConfigurationSetAggregationModel aggregationModel);
 }
