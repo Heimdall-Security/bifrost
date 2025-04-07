@@ -23,6 +23,8 @@ public class HeimdallBifrostRoleConfiguration {
     private String ROLE_MANAGEMENT_SUPPRESSION_ENTRY_WRITE;
     private String ROLE_MANAGEMENT_CONFIGURATION_SET_READ;
     private String ROLE_MANAGEMENT_CONFIGURATION_SET_WRITE;
+    private String ROLE_MANAGEMENT_SMTP_READ;
+    private String ROLE_MANAGEMENT_SMTP_WRITE;
     //Management API Scope
     private String SCOPE_MANAGEMENT_READ;
     private String SCOPE_MANAGEMENT_WRITE;
@@ -32,14 +34,14 @@ public class HeimdallBifrostRoleConfiguration {
      * It will add the prefix "SCOPE_" to the roles that do not already have it.
      */
     @PostConstruct
-    private void updateScopeMapping(){
+    private void updateScopeMapping() {
         Field[] fields = this.getClass().getDeclaredFields();
-        for (Field currentField : fields){
-            if(currentField.getName().startsWith("SCOPE")){
+        for (Field currentField : fields) {
+            if (currentField.getName().startsWith("SCOPE")) {
                 ReflectionUtils.makeAccessible(currentField);
-                try{
+                try {
                     String currentValue = (String) currentField.get(this);
-                    if(currentValue != null && !currentValue.startsWith("SCOPE_")){
+                    if (currentValue != null && !currentValue.startsWith("SCOPE_")) {
                         currentField.set(this, "SCOPE_%s".formatted(currentValue.toUpperCase()));
                     }
                 } catch (IllegalAccessException e) {

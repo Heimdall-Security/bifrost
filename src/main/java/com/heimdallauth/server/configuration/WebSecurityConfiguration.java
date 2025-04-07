@@ -21,6 +21,7 @@ public class WebSecurityConfiguration {
         jwtAuthenticationConverter.setPrincipalClaimName("username");
         return jwtAuthenticationConverter;
     }
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationConverter jwtAuthenticationConverter) throws Exception {
         http.securityMatcher("/api/**")

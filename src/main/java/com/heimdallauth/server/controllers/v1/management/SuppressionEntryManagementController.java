@@ -16,7 +16,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/management/suppression-entry")
-@Tag(name = "Suppression Entry Management Controller", description = "Controller for managing suppression entries")
+@Tag(name = "ManagementController", description = "Controller for Managing Configuration for Service")
 public class SuppressionEntryManagementController {
     private final EmailSuppressionManagementService emailSuppressionManagementService;
 
@@ -27,7 +27,7 @@ public class SuppressionEntryManagementController {
 
     @GetMapping
     @PreAuthorize("hasRole(@heimdallBifrostRoleConfiguration.ROLE_MANAGEMENT_SUPPRESSION_ENTRY_READ)")
-    public ResponseEntity<List<SuppressionEntryModel>> getAllSuppressionEntries(){
+    public ResponseEntity<List<SuppressionEntryModel>> getAllSuppressionEntries() {
         return ResponseEntity.ok(emailSuppressionManagementService.getAllSuppressionEntries());
     }
 

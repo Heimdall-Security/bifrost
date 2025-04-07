@@ -25,7 +25,9 @@ heimdall:
           role-management-configuration-set-read: READ:MANAGEMENT:CONFIGURATION-SET
           role-management-configuration-set-write: READ:MANAGEMENT:CONFIGURATION-SET
           role-management-suppression-entry-read: READ:MANAGEMENT:SUPPRESSION-ENTRIES
-          role-management-suppression-entry-write: READ:MANAGEMENT:SUPPRESSION-ENTRY
+          role-management-suppression-entry-write: WRITE:MANAGEMENT:SUPPRESSION-ENTRY
+          role-management-smtp-read: READ:MANAGEMENT:SMTP
+          role-management-smtp-write: WRITE:MANAGEMENT:SMTP
         client:
           client-id: ${OAUTH_CLIENT_ID}
 

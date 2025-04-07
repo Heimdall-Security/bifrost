@@ -15,4 +15,5 @@ import java.util.List;
 @Setter
 public class ConfigurationSetAggregationModel extends ConfigurationSetMasterDocument {
     private List<SuppressionEntryDocument> suppressionEntries;
+    private SmtpPropertiesDocument smtpProperties;
 }

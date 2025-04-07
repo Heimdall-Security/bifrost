@@ -11,7 +11,7 @@ import org.mapstruct.MappingConstants;
 public interface SuppressionEntryMapper {
 
     @Mapping(source = "id", target = "suppressionEntryId")
-    @Mapping(source="entryType", target = "suppressionListEntryType")
+    @Mapping(source = "entryType", target = "suppressionListEntryType")
     SuppressionEntryModel map(SuppressionEntryDocument suppressionEntryDocument);
 
     @InheritInverseConfiguration

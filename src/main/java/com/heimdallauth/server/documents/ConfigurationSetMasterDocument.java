@@ -28,6 +28,7 @@ public class ConfigurationSetMasterDocument {
     private String tenantId;
     @Indexed
     private List<String> suppressionListIds;
+    private String smtpPropertiesId;
     private Instant createdAt;
     private Instant updatedAt;
 }

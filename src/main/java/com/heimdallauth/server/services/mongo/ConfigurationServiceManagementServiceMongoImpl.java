@@ -1,17 +1,23 @@
 package com.heimdallauth.server.services.mongo;
 
+import com.heimdallauth.server.constants.bifrost.EmailConnectionType;
 import com.heimdallauth.server.documents.ConfigurationSetAggregationModel;
 import com.heimdallauth.server.documents.ConfigurationSetMasterDocument;
+import com.heimdallauth.server.documents.SmtpPropertiesDocument;
 import com.heimdallauth.server.documents.SuppressionEntryDocument;
 import com.heimdallauth.server.dto.bifrost.CreateConfigurationSetDTO;
+import com.heimdallauth.server.dto.bifrost.CreateSmtpPropertiesDTO;
 import com.heimdallauth.server.dto.bifrost.CreateSuppressionEntryDTO;
 import com.heimdallauth.server.exceptions.ConfigurationSetAlreadyExists;
 import com.heimdallauth.server.exceptions.ConfigurationSetNotFound;
+import com.heimdallauth.server.exceptions.SmtpPropertiesExist;
 import com.heimdallauth.server.exceptions.SuppressionListNotFound;
 import com.heimdallauth.server.models.bifrost.ConfigurationSetModel;
+import com.heimdallauth.server.models.bifrost.SmtpProperties;
 import com.heimdallauth.server.models.bifrost.SuppressionEntryModel;
 import com.heimdallauth.server.services.ConfigurationSetManagementService;
 import com.heimdallauth.server.services.EmailSuppressionManagementService;
+import com.heimdallauth.server.services.SmtpPropertiesManagementService;
 import com.heimdallauth.server.utils.mapper.ConfigurationMapper;
 import com.heimdallauth.server.utils.mapper.SuppressionEntryMapper;
 import com.mongodb.client.result.DeleteResult;
@@ -27,21 +33,21 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
+
+import static org.bson.assertions.Assertions.assertNotNull;
 
 @Repository
 @EnableScheduling
 @Slf4j
-public class ConfigurationServiceManagementServiceMongoImpl implements ConfigurationSetManagementService, EmailSuppressionManagementService {
+public class ConfigurationServiceManagementServiceMongoImpl implements ConfigurationSetManagementService, EmailSuppressionManagementService, SmtpPropertiesManagementService {
+    private static final String COLLECTION_CONFIGURATION_SETS = "configuration_sets";
+    private static final String COLLECTION_SUPPRESSION_LIST = "suppression_list";
+    private static final String COLLECTION_SMTP_PROPERTIES = "smtp_properties";
     private final MongoTemplate mongoTemplate;
     private final ConfigurationMapper configurationMapper;
     private final SuppressionEntryMapper suppressionEntryMapper;
-    private static final String COLLECTION_CONFIGURATION_SETS = "configuration_sets";
-    private static final String COLLECTION_SUPPRESSION_LIST = "suppression_list";
 
     public ConfigurationServiceManagementServiceMongoImpl(MongoTemplate mongoTemplate, ConfigurationMapper configurationMapper, SuppressionEntryMapper suppressionEntryMapper) {
         this.mongoTemplate = mongoTemplate;
@@ -53,19 +59,19 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
      * Create a new configuration set with the given payload.
      *
      * @param createConfigurationSetPayload The payload containing the configuration set details.
-     * @param tenantId The ID of the tenant creating the configuration set.
-     * @param force Whether to force creation even if a configuration set with the same name exists.
+     * @param tenantId                      The ID of the tenant creating the configuration set.
+     * @param force                         Whether to force creation even if a configuration set with the same name exists.
      * @return The created ConfigurationSetModel.
      * @throws ConfigurationSetAlreadyExists If a configuration set with the same name already exists and force is false.
      */
     @Override
-    public ConfigurationSetModel createNewConfigurationSet(CreateConfigurationSetDTO createConfigurationSetPayload,UUID tenantId ,boolean force) throws ConfigurationSetAlreadyExists {
-        if(force || isConfigurationSetExists(createConfigurationSetPayload.configurationSetName(), tenantId)){
+    public ConfigurationSetModel createNewConfigurationSet(CreateConfigurationSetDTO createConfigurationSetPayload, UUID tenantId, boolean force) throws ConfigurationSetAlreadyExists {
+        if (force || isConfigurationSetExists(createConfigurationSetPayload.configurationSetName(), tenantId)) {
             throw new ConfigurationSetAlreadyExists("Configuration set already exists");
         }
-        if(createConfigurationSetPayload.suppressionEntryIds() != null && !createConfigurationSetPayload.suppressionEntryIds().isEmpty()){
+        if (createConfigurationSetPayload.suppressionEntryIds() != null && !createConfigurationSetPayload.suppressionEntryIds().isEmpty()) {
             List<UUID> suppressionIdsNotPresent = this.getSuppressionIdsNotPresent(createConfigurationSetPayload.suppressionEntryIds());
-            if(!suppressionIdsNotPresent.isEmpty()){
+            if (!suppressionIdsNotPresent.isEmpty()) {
                 log.error("Suppression entry ids not present, ids={}", suppressionIdsNotPresent);
             }
         }
@@ -83,14 +89,15 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
         this.mongoTemplate.save(configurationSetMasterDocument, COLLECTION_CONFIGURATION_SETS);
         return this.getConfigurationSetById(configurationSetId);
     }
+
     /**
      * Check if a configuration set with the given name already exists for the specified tenant.
      *
      * @param configurationSetName The name of the configuration set to check.
-     * @param tenantId The ID of the tenant to check against.
+     * @param tenantId             The ID of the tenant to check against.
      * @return true if the configuration set exists, false otherwise.
      */
-    private boolean isConfigurationSetExists(String configurationSetName, UUID tenantId){
+    private boolean isConfigurationSetExists(String configurationSetName, UUID tenantId) {
         Query configurationSetSearchQueryForTenant = Query.query(Criteria.where("tenantId").is(tenantId).and("configurationSetName").is(configurationSetName));
         return this.mongoTemplate.exists(configurationSetSearchQueryForTenant, ConfigurationSetMasterDocument.class, COLLECTION_CONFIGURATION_SETS);
     }
@@ -105,7 +112,7 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
     @Override
     public ConfigurationSetModel getConfigurationSetById(UUID configurationSetId) throws ConfigurationSetNotFound {
         ConfigurationSetAggregationModel aggregationResult = getConfigurationSetMasterDocumentById(configurationSetId);
-        if(aggregationResult != null){
+        if (aggregationResult != null) {
             return configurationMapper.toConfigurationSetModel(aggregationResult);
         }
         return null;
@@ -115,7 +122,7 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
      * Update the status of a configuration set.
      *
      * @param configurationSetId The ID of the configuration set to update.
-     * @param isEnabled The new status to set for the configuration set.
+     * @param isEnabled          The new status to set for the configuration set.
      * @return The updated ConfigurationSetModel.
      * @throws ConfigurationSetNotFound If no configuration set is found for the given ID.
      */
@@ -136,6 +143,17 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
         return null;
     }
 
+    private void updateConfigurationSetSmtpPropertiesId(UUID configurationSetId, UUID smtpPropertiesId) throws ConfigurationSetNotFound {
+        Query configurationSetMasterSearchQuery = Query.query(Criteria.where("_id").is(configurationSetId.toString()));
+        Update updateSpec = Update.update("smtpPropertiesId", Objects.nonNull(smtpPropertiesId) ? smtpPropertiesId.toString() : null);
+        UpdateResult mongoUpdateResult = this.mongoTemplate.updateMulti(configurationSetMasterSearchQuery, updateSpec, ConfigurationSetMasterDocument.class, COLLECTION_CONFIGURATION_SETS);
+        if (mongoUpdateResult.getModifiedCount() > 0) {
+            log.debug("Updated configuration set with ID: {}, Set smtpProperties = {}. Updated count: {}", configurationSetId, smtpPropertiesId, mongoUpdateResult.getModifiedCount());
+        } else {
+            throw new ConfigurationSetNotFound("No Matching configuration set found for the given ID");
+        }
+    }
+
     /**
      * Get all configuration sets for a given tenant ID.
      *
@@ -144,13 +162,9 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
      */
     @Override
     public List<ConfigurationSetModel> getConfigurationSetsForTenantId(UUID tenantId) {
-        Query searchConfigurationSetForTenantQuery = Query.query(Criteria.where("tenantId").is(tenantId.toString()));
-        List<ConfigurationSetMasterDocument> configurationSetDocuments = this.mongoTemplate.find(searchConfigurationSetForTenantQuery, ConfigurationSetMasterDocument.class, COLLECTION_CONFIGURATION_SETS);
-        if(configurationSetDocuments.isEmpty()){
-            return List.of();
-        }else{
-            return configurationSetDocuments.stream().map(configurationMapper::toConfigurationSetModel).toList();
-        }
+        List<UUID> configurationSetIds = this.mongoTemplate.find(Query.query(Criteria.where("tenantId").is(tenantId.toString())), ConfigurationSetMasterDocument.class, COLLECTION_CONFIGURATION_SETS)
+                .stream().map(ConfigurationSetMasterDocument::getConfigurationId).map(UUID::fromString).toList();
+        return this.getConfigurationSetMasterDocumentById(configurationSetIds).stream().map(configurationMapper::toConfigurationSetModel).toList();
     }
 
     /**
@@ -162,9 +176,9 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
     public void deleteConfigurationSetById(UUID configurationSetId) {
         Query deleteConfigurationSetQuery = Query.query(Criteria.where("_id").is(configurationSetId.toString()));
         DeleteResult deleteResult = this.mongoTemplate.remove(deleteConfigurationSetQuery, COLLECTION_CONFIGURATION_SETS);
-        if(deleteResult.getDeletedCount() > 0){
+        if (deleteResult.getDeletedCount() > 0) {
             log.debug("Deleted configuration set with ID: {}. Deleted count: {}", configurationSetId, deleteResult.getDeletedCount());
-        }else{
+        } else {
             log.error("No instances matched, Nothing to delete. Deleted count: {}", 0);
         }
     }
@@ -172,23 +186,36 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
     /**
      * Get a configuration set by its ID.
      *
-     * @param configurationSetId The ID of the configuration set to retrieve.
+     * @param configurationSetIds The ID of the configuration set to retrieve.
      * @return The ConfigurationSetModel associated with the given ID.
      * @throws ConfigurationSetNotFound If no configuration set is found for the given ID.
      */
-    private ConfigurationSetAggregationModel getConfigurationSetMasterDocumentById(UUID configurationSetId) throws ConfigurationSetNotFound {
+    private List<ConfigurationSetAggregationModel> getConfigurationSetMasterDocumentById(List<UUID> configurationSetIds) throws ConfigurationSetNotFound {
         Aggregation configurationSetAggregation = Aggregation.newAggregation(
-                Aggregation.match(Criteria.where("_id").is(configurationSetId.toString())),
-                Aggregation.lookup(COLLECTION_SUPPRESSION_LIST, "suppressionListIds", "_id", "suppressionEntries")
+                Aggregation.match(Criteria.where("_id").in(configurationSetIds.stream().map(UUID::toString).toList())),
+                Aggregation.lookup(COLLECTION_SUPPRESSION_LIST, "suppressionListIds", "_id", "suppressionEntries"),
+                Aggregation.lookup(COLLECTION_SMTP_PROPERTIES, "smtpPropertiesId", "_id", "smtpProperties"),
+                Aggregation.unwind("smtpProperties", true)
         );
-       return this.mongoTemplate.aggregate(configurationSetAggregation, COLLECTION_CONFIGURATION_SETS, ConfigurationSetAggregationModel.class).getMappedResults().getFirst();
+        return this.mongoTemplate.aggregate(configurationSetAggregation, COLLECTION_CONFIGURATION_SETS, ConfigurationSetAggregationModel.class).getMappedResults();
+    }
+
+    /**
+     * Get a configuration set by its ID.
+     *
+     * @param configurationSetIds The ID of the configuration set to retrieve.
+     * @return The ConfigurationSetModel associated with the given ID.
+     * @throws ConfigurationSetNotFound If no configuration set is found for the given ID.
+     */
+    private ConfigurationSetAggregationModel getConfigurationSetMasterDocumentById(UUID configurationSetIds) throws ConfigurationSetNotFound {
+        return getConfigurationSetMasterDocumentById(List.of(configurationSetIds)).getFirst();
     }
 
     /**
      * Get a configuration set by its name and tenant ID.
      *
      * @param configurationSetName The name of the configuration set to retrieve.
-     * @param tenantId The ID of the tenant to retrieve the configuration set for.
+     * @param tenantId             The ID of the tenant to retrieve the configuration set for.
      * @return The ConfigurationSetModel associated with the given name and tenant ID.
      * @throws ConfigurationSetNotFound If no configuration set is found for the given name and tenant ID.
      */
@@ -199,9 +226,9 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
                 Aggregation.lookup(COLLECTION_SUPPRESSION_LIST, "suppressionListIds", "id", "suppressionEntries")
         );
         ConfigurationSetAggregationModel aggregationModel = this.mongoTemplate.aggregate(aggregationPipelineQuery, COLLECTION_CONFIGURATION_SETS, ConfigurationSetAggregationModel.class).getMappedResults().getFirst();
-        if(aggregationModel != null){
+        if (aggregationModel != null) {
             return configurationMapper.toConfigurationSetModel(aggregationModel);
-        }else{
+        } else {
             throw new ConfigurationSetNotFound("Configuration set not found");
         }
     }
@@ -209,8 +236,8 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
     /**
      * Update the master data of a configuration set.
      *
-     * @param configurationSetId The ID of the configuration set to update.
-     * @param configurationSetName The new name for the configuration set.
+     * @param configurationSetId          The ID of the configuration set to update.
+     * @param configurationSetName        The new name for the configuration set.
      * @param configurationSetDescription The new description for the configuration set.
      * @return The updated ConfigurationSetModel.
      * @throws ConfigurationSetNotFound If the configuration set is not found.
@@ -222,9 +249,9 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
         updateSpec.set("configurationSetName", configurationSetName);
         this.mongoTemplate.updateFirst(configurationSetSearchQuery, updateSpec, ConfigurationSetMasterDocument.class);
         ConfigurationSetAggregationModel aggregationResult = getConfigurationSetMasterDocumentById(UUID.fromString(configurationSetId));
-        if(aggregationResult != null){
+        if (aggregationResult != null) {
             return configurationMapper.toConfigurationSetModel(aggregationResult);
-        }else{
+        } else {
             throw new ConfigurationSetNotFound("Configuration set not found");
         }
     }
@@ -236,7 +263,7 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
      */
     @Override
     public List<SuppressionEntryModel> getAllSuppressionEntries() {
-        List<SuppressionEntryDocument> allEntriesDocuments  = this.mongoTemplate.findAll(SuppressionEntryDocument.class, COLLECTION_SUPPRESSION_LIST);
+        List<SuppressionEntryDocument> allEntriesDocuments = this.mongoTemplate.findAll(SuppressionEntryDocument.class, COLLECTION_SUPPRESSION_LIST);
         return allEntriesDocuments.stream().map(this::mapSuppressionEntryDocumentToModel).toList();
     }
 
@@ -252,7 +279,7 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
         Query suppressionEntrySearchQuery = Query.query(Criteria.where("id").in(suppressionEntryId.stream().map(UUID::toString).toList()));
         List<SuppressionEntryModel> matchedSuppressionEntries = this.mongoTemplate.find(suppressionEntrySearchQuery, SuppressionEntryDocument.class, COLLECTION_SUPPRESSION_LIST)
                 .stream().map(this::mapSuppressionEntryDocumentToModel).toList();
-        if(matchedSuppressionEntries.isEmpty()){
+        if (matchedSuppressionEntries.isEmpty()) {
             throw new SuppressionListNotFound("No suppression list found");
         }
         return matchedSuppressionEntries;
@@ -289,9 +316,9 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
     public SuppressionEntryModel getSuppressionEntryById(UUID suppressionEntryId) throws SuppressionListNotFound {
         Query suppressionEntrySearchQuery = Query.query(Criteria.where("_id").is(suppressionEntryId.toString()));
         Optional<SuppressionEntryDocument> suppressionEntryDocument = Optional.ofNullable(this.mongoTemplate.findOne(suppressionEntrySearchQuery, SuppressionEntryDocument.class, COLLECTION_SUPPRESSION_LIST));
-        if(suppressionEntryDocument.isPresent()){
+        if (suppressionEntryDocument.isPresent()) {
             return mapSuppressionEntryDocumentToModel(suppressionEntryDocument.get());
-        }else{
+        } else {
             throw new SuppressionListNotFound("Suppression list not found");
         }
     }
@@ -314,17 +341,18 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
      * @param suppressionEntryId The ID of the suppression entry to delete.
      */
     @Override
-    public void deleteSuppressionEntryById(UUID suppressionEntryId)  {
+    public void deleteSuppressionEntryById(UUID suppressionEntryId) {
         Query suppressionCollectionSearchQuery = Query.query(Criteria.where("id").is(suppressionEntryId.toString()));
         DeleteResult deleteResult = this.mongoTemplate.remove(suppressionCollectionSearchQuery, SuppressionEntryDocument.class, COLLECTION_SUPPRESSION_LIST);
         log.debug("Deleted suppression entry with ID: {}. Deleted count: {}", suppressionEntryId, deleteResult.getDeletedCount());
     }
+
     /**
      * Delete suppression entries by their IDs.
      *
      * @param suppressionEntryIds The list of suppression entry IDs to delete.
      */
-    private void deleteSuppressionEntryByIds(List<String> suppressionEntryIds){
+    private void deleteSuppressionEntryByIds(List<String> suppressionEntryIds) {
         Query suppressionEntrySearchQuery = Query.query(Criteria.where("id").in(suppressionEntryIds));
         this.mongoTemplate.remove(suppressionEntrySearchQuery, SuppressionEntryDocument.class, COLLECTION_SUPPRESSION_LIST);
         log.debug("Deleted suppression entries with IDs: {}", suppressionEntryIds);
@@ -339,16 +367,18 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
     private SuppressionEntryModel mapSuppressionEntryDocumentToModel(SuppressionEntryDocument suppressionEntryDocument) {
         return suppressionEntryMapper.map(suppressionEntryDocument);
     }
+
     /**
      * Get the list of suppression IDs that are not present in the database.
      *
      * @param idsToValidate The list of suppression IDs to validate.
      * @return A list of UUIDs representing the suppression IDs that are not present in the database.
      */
-    private List<UUID> getSuppressionIdsNotPresent(List<UUID> idsToValidate){
+    private List<UUID> getSuppressionIdsNotPresent(List<UUID> idsToValidate) {
         List<UUID> idsMatchedInDB = this.getAllSuppressionEntriesById(idsToValidate).stream().map(SuppressionEntryModel::suppressionEntryId).toList();
         return idsToValidate.stream().filter(id -> !idsMatchedInDB.contains(id)).toList();
     }
+
     /**
      * Trigger the unused suppression list cleanup.
      * This method is scheduled to run daily at midnight.
@@ -356,13 +386,14 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
     @Scheduled(cron = "0 0 0 * * ?")
     void triggerDatabaseMaintenance() {
         log.debug("Database maintenance triggered");
-       triggerUnusedSuppressionList();
+        triggerUnusedSuppressionList();
     }
+
     /**
      * Trigger the unused suppression list cleanup.
      * This method is scheduled to run daily at midnight.
      */
-    private void triggerUnusedSuppressionList(){
+    private void triggerUnusedSuppressionList() {
         Set<String> allSuppressionListIds = this.mongoTemplate.findAll(ConfigurationSetMasterDocument.class, COLLECTION_CONFIGURATION_SETS).stream().map(ConfigurationSetMasterDocument::getSuppressionListIds).flatMap(List::stream).collect(Collectors.toSet());
         Set<String> allSuppressionIds = this.mongoTemplate.findAll(SuppressionEntryDocument.class, COLLECTION_SUPPRESSION_LIST).stream().map(SuppressionEntryDocument::getId).collect(Collectors.toSet());
         Set<String> unusedSuppressionIds = allSuppressionIds.stream().filter(id -> !allSuppressionListIds.contains(id)).collect(Collectors.toSet());
@@ -370,4 +401,58 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
         this.deleteSuppressionEntryByIds(unusedSuppressionIds.stream().toList());
     }
 
+    @Override
+    public void createSmtpProperties(UUID configurationSetId, CreateSmtpPropertiesDTO smtpProperties) throws ConfigurationSetNotFound, SmtpPropertiesExist {
+        UUID smtpPropertiesId = UUID.randomUUID();
+        ConfigurationSetAggregationModel fetchedConfigurationSet = getConfigurationSetMasterDocumentById(configurationSetId);
+        if (fetchedConfigurationSet != null && fetchedConfigurationSet.getSmtpPropertiesId() != null) {
+            throw new SmtpPropertiesExist("Smtp properties already exist with id %s".formatted(fetchedConfigurationSet.getSmtpPropertiesId()));
+        } else {
+            SmtpPropertiesDocument smtpPropertiesDocument = SmtpPropertiesDocument.builder()
+                    .id(smtpPropertiesId.toString())
+                    .port(smtpProperties.portNumber())
+                    .authenticationMethod(smtpProperties.authenticationMethod())
+                    .emailConnectionType(EmailConnectionType.SMTP)
+                    .host(smtpProperties.serverAddress())
+                    .smtpServerLoginUsername(smtpProperties.loginUsername())
+                    .smtpServerLoginPassword(smtpProperties.loginPassword())
+                    .smtpConnectionSecurity(smtpProperties.connectionSecurity())
+                    .fromEmailAddress(smtpProperties.fromEmailAddress())
+                    .connectionLimit(smtpProperties.connectionLimit())
+                    .build();
+            this.mongoTemplate.save(smtpPropertiesDocument, COLLECTION_SMTP_PROPERTIES);
+            this.updateConfigurationSetSmtpPropertiesId(configurationSetId, smtpPropertiesId);
+            log.debug("Created SMTP properties with ID: {} for configuration set ID: {}", smtpPropertiesId, configurationSetId);
+        }
+    }
+
+    @Override
+    public void updateSmtpProperties(UUID configurationSetId, SmtpProperties smtpProperties) throws ConfigurationSetNotFound {
+        ConfigurationSetAggregationModel fetchedConfigurationSet = getConfigurationSetMasterDocumentById(configurationSetId);
+        assertNotNull(fetchedConfigurationSet);
+        assertNotNull(fetchedConfigurationSet.getSmtpPropertiesId());
+        SmtpPropertiesDocument smtpPropertiesDocument = SmtpPropertiesDocument.builder()
+                .id(fetchedConfigurationSet.getSmtpPropertiesId())
+                .port(smtpProperties.portNumber())
+                .authenticationMethod(smtpProperties.authenticationMethod())
+                .emailConnectionType(EmailConnectionType.SMTP)
+                .host(smtpProperties.serverAddress())
+                .fromEmailAddress(smtpProperties.fromEmailAddress())
+                .connectionLimit(smtpProperties.connectionLimit())
+                .build();
+        this.mongoTemplate.save(smtpPropertiesDocument, COLLECTION_SMTP_PROPERTIES);
+    }
+
+    @Override
+    public void deleteSmtpProperties(UUID configurationSetId) throws ConfigurationSetNotFound {
+        ConfigurationSetAggregationModel fetchedConfigurationSet = getConfigurationSetMasterDocumentById(configurationSetId);
+        assertNotNull(fetchedConfigurationSet);
+        assertNotNull(fetchedConfigurationSet.getSmtpPropertiesId());
+        Query smtpPropertiesSearchQuery = Query.query(Criteria.where("_id").is(fetchedConfigurationSet.getSmtpPropertiesId()));
+        this.updateConfigurationSetSmtpPropertiesId(configurationSetId, null);
+        DeleteResult smtpPropertiesDeleteResult = this.mongoTemplate.remove(smtpPropertiesSearchQuery, SmtpPropertiesDocument.class, COLLECTION_SMTP_PROPERTIES);
+        if (smtpPropertiesDeleteResult.getDeletedCount() > 0) {
+            log.debug("Deleted SMTP properties with ID: {}. Deleted count: {}", fetchedConfigurationSet.getSmtpPropertiesId(), smtpPropertiesDeleteResult.getDeletedCount());
+        }
+    }
 }
