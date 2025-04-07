@@ -1,17 +1,23 @@
 package com.heimdallauth.server.services.mongo;
 
+import com.heimdallauth.server.constants.bifrost.EmailConnectionType;
 import com.heimdallauth.server.documents.ConfigurationSetAggregationModel;
 import com.heimdallauth.server.documents.ConfigurationSetMasterDocument;
+import com.heimdallauth.server.documents.SmtpPropertiesDocument;
 import com.heimdallauth.server.documents.SuppressionEntryDocument;
 import com.heimdallauth.server.dto.bifrost.CreateConfigurationSetDTO;
+import com.heimdallauth.server.dto.bifrost.CreateSmtpPropertiesDTO;
 import com.heimdallauth.server.dto.bifrost.CreateSuppressionEntryDTO;
 import com.heimdallauth.server.exceptions.ConfigurationSetAlreadyExists;
 import com.heimdallauth.server.exceptions.ConfigurationSetNotFound;
+import com.heimdallauth.server.exceptions.SmtpPropertiesExist;
 import com.heimdallauth.server.exceptions.SuppressionListNotFound;
 import com.heimdallauth.server.models.bifrost.ConfigurationSetModel;
+import com.heimdallauth.server.models.bifrost.SmtpProperties;
 import com.heimdallauth.server.models.bifrost.SuppressionEntryModel;
 import com.heimdallauth.server.services.ConfigurationSetManagementService;
 import com.heimdallauth.server.services.EmailSuppressionManagementService;
+import com.heimdallauth.server.services.SmtpPropertiesManagementService;
 import com.heimdallauth.server.utils.mapper.ConfigurationMapper;
 import com.heimdallauth.server.utils.mapper.SuppressionEntryMapper;
 import com.mongodb.client.result.DeleteResult;
@@ -33,15 +39,19 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import static org.bson.assertions.Assertions.assertNotNull;
+
 @Repository
 @EnableScheduling
 @Slf4j
-public class ConfigurationServiceManagementServiceMongoImpl implements ConfigurationSetManagementService, EmailSuppressionManagementService {
+public class ConfigurationServiceManagementServiceMongoImpl implements ConfigurationSetManagementService, EmailSuppressionManagementService, SmtpPropertiesManagementService {
     private final MongoTemplate mongoTemplate;
     private final ConfigurationMapper configurationMapper;
     private final SuppressionEntryMapper suppressionEntryMapper;
+
     private static final String COLLECTION_CONFIGURATION_SETS = "configuration_sets";
     private static final String COLLECTION_SUPPRESSION_LIST = "suppression_list";
+    private static final String COLLECTION_SMTP_PROPERTIES = "smtp_properties";
 
     public ConfigurationServiceManagementServiceMongoImpl(MongoTemplate mongoTemplate, ConfigurationMapper configurationMapper, SuppressionEntryMapper suppressionEntryMapper) {
         this.mongoTemplate = mongoTemplate;
@@ -136,6 +146,17 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
         return null;
     }
 
+    private void updateConfigurationSetSmtpPropertiesId(UUID configurationSetId, UUID smtpPropertiesId) throws ConfigurationSetNotFound {
+        Query configurationSetMasterSearchQuery = Query.query(Criteria.where("_id").is(configurationSetId.toString()));
+        Update updateSpec = Update.update("smtpPropertiesId", smtpPropertiesId.toString());
+        UpdateResult mongoUpdateResult = this.mongoTemplate.updateFirst(configurationSetMasterSearchQuery, updateSpec, ConfigurationSetMasterDocument.class, COLLECTION_CONFIGURATION_SETS);
+        if(mongoUpdateResult.getModifiedCount() > 0) {
+            log.debug("Updated configuration set with ID: {}, Set smtpProperties = {}. Updated count: {}", configurationSetId, smtpPropertiesId, mongoUpdateResult.getModifiedCount());
+        }else{
+            throw new ConfigurationSetNotFound("No Matching configuration set found for the given ID");
+        }
+    }
+
     /**
      * Get all configuration sets for a given tenant ID.
      *
@@ -179,7 +200,9 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
     private ConfigurationSetAggregationModel getConfigurationSetMasterDocumentById(UUID configurationSetId) throws ConfigurationSetNotFound {
         Aggregation configurationSetAggregation = Aggregation.newAggregation(
                 Aggregation.match(Criteria.where("_id").is(configurationSetId.toString())),
-                Aggregation.lookup(COLLECTION_SUPPRESSION_LIST, "suppressionListIds", "_id", "suppressionEntries")
+                Aggregation.lookup(COLLECTION_SUPPRESSION_LIST, "suppressionListIds", "_id", "suppressionEntries"),
+                Aggregation.lookup(COLLECTION_SMTP_PROPERTIES, "smtpPropertiesId", "_id", "smtpProperties"),
+                Aggregation.unwind("smtpProperties", true)
         );
        return this.mongoTemplate.aggregate(configurationSetAggregation, COLLECTION_CONFIGURATION_SETS, ConfigurationSetAggregationModel.class).getMappedResults().getFirst();
     }
@@ -370,4 +393,55 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
         this.deleteSuppressionEntryByIds(unusedSuppressionIds.stream().toList());
     }
 
+    @Override
+    public void createSmtpProperties(UUID configurationSetId, CreateSmtpPropertiesDTO smtpProperties) throws ConfigurationSetNotFound, SmtpPropertiesExist {
+        UUID smtpPropertiesId = UUID.randomUUID();
+        ConfigurationSetAggregationModel fetchedConfigurationSet = getConfigurationSetMasterDocumentById(configurationSetId);
+        if(fetchedConfigurationSet != null && fetchedConfigurationSet.getSmtpPropertiesId()!= null){
+            throw new SmtpPropertiesExist("Smtp properties already exist with id %s".formatted(fetchedConfigurationSet.getSmtpPropertiesId()));
+        }else{
+            SmtpPropertiesDocument smtpPropertiesDocument =SmtpPropertiesDocument.builder()
+                    .id(smtpPropertiesId.toString())
+                    .port(smtpProperties.portNumber())
+                    .authenticationMethod(smtpProperties.authenticationMethod())
+                    .emailConnectionType(EmailConnectionType.SMTP)
+                    .host(smtpProperties.serverAddress())
+                    .fromEmailAddress(smtpProperties.fromEmailAddress())
+                    .connectionLimit(smtpProperties.connectionLimit())
+                    .build();
+            this.mongoTemplate.save(smtpPropertiesDocument, COLLECTION_SMTP_PROPERTIES);
+            this.updateConfigurationSetSmtpPropertiesId(configurationSetId, smtpPropertiesId);
+            log.debug("Created SMTP properties with ID: {} for configuration set ID: {}", smtpPropertiesId, configurationSetId);
+        }
+    }
+
+    @Override
+    public void updateSmtpProperties(UUID configurationSetId, SmtpProperties smtpProperties) throws ConfigurationSetNotFound {
+        ConfigurationSetAggregationModel fetchedConfigurationSet = getConfigurationSetMasterDocumentById(configurationSetId);
+        assertNotNull(fetchedConfigurationSet);
+        assertNotNull(fetchedConfigurationSet.getSmtpPropertiesId());
+        SmtpPropertiesDocument smtpPropertiesDocument = SmtpPropertiesDocument.builder()
+                .id(fetchedConfigurationSet.getSmtpPropertiesId())
+                .port(smtpProperties.portNumber())
+                .authenticationMethod(smtpProperties.authenticationMethod())
+                .emailConnectionType(EmailConnectionType.SMTP)
+                .host(smtpProperties.serverAddress())
+                .fromEmailAddress(smtpProperties.fromEmailAddress())
+                .connectionLimit(smtpProperties.connectionLimit())
+                .build();
+        this.mongoTemplate.save(smtpPropertiesDocument, COLLECTION_SMTP_PROPERTIES);
+    }
+
+    @Override
+    public void deleteSmtpProperties(UUID configurationSetId) throws ConfigurationSetNotFound {
+        ConfigurationSetAggregationModel fetchedConfigurationSet = getConfigurationSetMasterDocumentById(configurationSetId);
+        assertNotNull(fetchedConfigurationSet);
+        assertNotNull(fetchedConfigurationSet.getSmtpPropertiesId());
+        Query smtpPropertiesSearchQuery = Query.query(Criteria.where("_id").is(fetchedConfigurationSet.getSmtpPropertiesId()));
+        this.updateConfigurationSetSmtpPropertiesId(configurationSetId, null);
+        DeleteResult smtpPropertiesDeleteResult = this.mongoTemplate.remove(smtpPropertiesSearchQuery, SmtpPropertiesDocument.class, COLLECTION_SMTP_PROPERTIES);
+        if (smtpPropertiesDeleteResult.getDeletedCount() > 0) {
+            log.debug("Deleted SMTP properties with ID: {}. Deleted count: {}", fetchedConfigurationSet.getSmtpPropertiesId(), smtpPropertiesDeleteResult.getDeletedCount());
+        }
+    }
 }

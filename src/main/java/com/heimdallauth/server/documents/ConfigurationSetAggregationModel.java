@@ -1,5 +1,6 @@
 package com.heimdallauth.server.documents;
 
+import com.heimdallauth.server.models.bifrost.SmtpProperties;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -15,4 +16,5 @@ import java.util.List;
 @Setter
 public class ConfigurationSetAggregationModel extends ConfigurationSetMasterDocument {
     private List<SuppressionEntryDocument> suppressionEntries;
+    private SmtpProperties smtpProperties;
 }
