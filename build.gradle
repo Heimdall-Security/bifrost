@@ -42,6 +42,7 @@ dependencies {
     implementation "com.heimdallauth.server:heimdall-commons-java:${heimdallCommonsVersion}"
     implementation "org.mapstruct:mapstruct:${mapStructVersion}"
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.5'
+    implementation 'org.springframework.boot:spring-boot-starter-mail'
     implementation 'com.github.ben-manes.caffeine:caffeine'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
