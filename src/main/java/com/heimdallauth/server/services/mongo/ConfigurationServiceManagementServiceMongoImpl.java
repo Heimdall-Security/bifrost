@@ -15,6 +15,7 @@ import com.heimdallauth.server.services.EmailSuppressionManagementService;
 import com.heimdallauth.server.utils.mapper.ConfigurationMapper;
 import com.heimdallauth.server.utils.mapper.SuppressionEntryMapper;
 import com.mongodb.client.result.DeleteResult;
+import com.mongodb.client.result.UpdateResult;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
@@ -72,6 +73,7 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
         ConfigurationSetMasterDocument configurationSetMasterDocument = ConfigurationSetMasterDocument.builder()
                 .configurationId(configurationSetId.toString())
                 .tenantId(tenantId.toString())
+                .isEnabled(false)
                 .configurationSetName(createConfigurationSetPayload.configurationSetName())
                 .configurationSetDescription(createConfigurationSetPayload.configurationSetDescription())
                 .suppressionListIds(createConfigurationSetPayload.suppressionEntryIds().stream().map(UUID::toString).collect(Collectors.toList()))
@@ -109,6 +111,37 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
         return null;
     }
 
+    /**
+     * Update the status of a configuration set.
+     *
+     * @param configurationSetId The ID of the configuration set to update.
+     * @param isEnabled The new status to set for the configuration set.
+     * @return The updated ConfigurationSetModel.
+     * @throws ConfigurationSetNotFound If no configuration set is found for the given ID.
+     */
+    @Override
+    public ConfigurationSetModel updateConfigurationSetStatus(UUID configurationSetId, boolean isEnabled) throws ConfigurationSetNotFound {
+        Query configurationSetSearchQuery = Query.query(Criteria.where("_id").is(configurationSetId.toString()));
+        long matchedCount = this.mongoTemplate.count(configurationSetSearchQuery, ConfigurationSetMasterDocument.class, COLLECTION_CONFIGURATION_SETS);
+        if (matchedCount > 1) {
+            log.error("Multiple configuration sets found with the same ID: {}", configurationSetId);
+            throw new ConfigurationSetNotFound("Multiple configuration sets found with the same ID");
+        }
+        Update updateSpec = Update.update("isEnabled", isEnabled);
+        UpdateResult result = this.mongoTemplate.updateMulti(configurationSetSearchQuery, updateSpec, ConfigurationSetMasterDocument.class, COLLECTION_CONFIGURATION_SETS);
+        if (result.getModifiedCount() > 0) {
+            log.debug("Updated configuration set with ID: {}. Updated count: {}", configurationSetId, result.getModifiedCount());
+            return this.getConfigurationSetById(configurationSetId);
+        }
+        return null;
+    }
+
+    /**
+     * Get all configuration sets for a given tenant ID.
+     *
+     * @param tenantId The ID of the tenant to retrieve configuration sets for.
+     * @return A list of ConfigurationSetModel objects associated with the given tenant ID.
+     */
     @Override
     public List<ConfigurationSetModel> getConfigurationSetsForTenantId(UUID tenantId) {
         Query searchConfigurationSetForTenantQuery = Query.query(Criteria.where("tenantId").is(tenantId.toString()));
@@ -117,6 +150,22 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
             return List.of();
         }else{
             return configurationSetDocuments.stream().map(configurationMapper::toConfigurationSetModel).toList();
+        }
+    }
+
+    /**
+     * Delete a configuration set by its ID.
+     *
+     * @param configurationSetId The ID of the configuration set to delete.
+     */
+    @Override
+    public void deleteConfigurationSetById(UUID configurationSetId) {
+        Query deleteConfigurationSetQuery = Query.query(Criteria.where("_id").is(configurationSetId.toString()));
+        DeleteResult deleteResult = this.mongoTemplate.remove(deleteConfigurationSetQuery, COLLECTION_CONFIGURATION_SETS);
+        if(deleteResult.getDeletedCount() > 0){
+            log.debug("Deleted configuration set with ID: {}. Deleted count: {}", configurationSetId, deleteResult.getDeletedCount());
+        }else{
+            log.error("No instances matched, Nothing to delete. Deleted count: {}", 0);
         }
     }
 
@@ -180,6 +229,11 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
         }
     }
 
+    /**
+     * Get all suppression entries.
+     *
+     * @return A list of SuppressionEntryModel objects representing all suppression entries.
+     */
     @Override
     public List<SuppressionEntryModel> getAllSuppressionEntries() {
         List<SuppressionEntryDocument> allEntriesDocuments  = this.mongoTemplate.findAll(SuppressionEntryDocument.class, COLLECTION_SUPPRESSION_LIST);

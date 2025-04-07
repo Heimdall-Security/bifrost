@@ -22,6 +22,7 @@ public class ConfigurationSetMasterDocument {
     @Id
     private String configurationId;
     private String configurationSetName;
+    private boolean isEnabled;
     private String configurationSetDescription;
     @Indexed
     private String tenantId;

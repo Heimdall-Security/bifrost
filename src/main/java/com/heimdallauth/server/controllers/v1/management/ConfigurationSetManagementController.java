@@ -37,4 +37,15 @@ public class ConfigurationSetManagementController {
     public ResponseEntity<List<ConfigurationSetModel>> getConfigurationSetForTenantId(@RequestParam("tenantId") UUID tenantId){
         return ResponseEntity.ok(this.configurationSetManagementService.getConfigurationSetsForTenantId(tenantId));
     }
+    @DeleteMapping("/{configurationSetId}")
+    @PreAuthorize("hasRole(@heimdallBifrostRoleConfiguration.ROLE_MANAGEMENT_WRITE)")
+    public ResponseEntity<Void> deleteConfigurationSetById(@PathVariable("configurationSetId") UUID configurationSetId){
+        this.configurationSetManagementService.deleteConfigurationSetById(configurationSetId);
+        return ResponseEntity.ok().build();
+    }
+    @PutMapping("/{configurationSetId}/status")
+    @PreAuthorize("hasRole(@heimdallBifrostRoleConfiguration.ROLE_MANAGEMENT_WRITE)")
+    public ResponseEntity<ConfigurationSetModel> updateConfigurationSetStatus(@PathVariable("configurationSetId") UUID configurationSetId, @RequestParam("isEnabled") boolean isEnabled){
+        return ResponseEntity.ok(this.configurationSetManagementService.updateConfigurationSetStatus(configurationSetId, isEnabled));
+    }
 }
