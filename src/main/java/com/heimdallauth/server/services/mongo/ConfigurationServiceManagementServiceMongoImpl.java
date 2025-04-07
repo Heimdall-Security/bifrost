@@ -208,7 +208,12 @@ public class ConfigurationServiceManagementServiceMongoImpl implements Configura
      * @throws ConfigurationSetNotFound If no configuration set is found for the given ID.
      */
     private ConfigurationSetAggregationModel getConfigurationSetMasterDocumentById(UUID configurationSetIds) throws ConfigurationSetNotFound {
-        return getConfigurationSetMasterDocumentById(List.of(configurationSetIds)).getFirst();
+        List<ConfigurationSetAggregationModel> matchedConfigurationSets = getConfigurationSetMasterDocumentById(List.of(configurationSetIds));
+        if(matchedConfigurationSets.isEmpty()){
+            throw new ConfigurationSetNotFound("Configuration set not found");
+        } else {
+            return matchedConfigurationSets.getFirst();
+        }
     }
 
     /**
