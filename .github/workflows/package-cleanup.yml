@@ -1,0 +1,19 @@
+name: Cleanup Java Packages
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 1 * *'
+permissions:
+  contents: read
+  packages: write
+jobs:
+  delete-run-packages:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete all packages
+        uses: actions/delete-package-versions@v5
+        with:
+          package-name: 'com.heimdallauth.server.bifrost'
+          package-type: 'maven'
+          ignore-versions: '^\d+\.\d+\.\d+$'
+          min-versions-to-keep: '5'
