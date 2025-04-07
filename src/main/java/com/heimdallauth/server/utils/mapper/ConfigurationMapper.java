@@ -13,6 +13,4 @@ public interface ConfigurationMapper {
     @Mapping(source = "configurationId", target = "configurationSetId")
     @Mapping(source ="aggregationModel.smtpProperties", target = "smtpProperties", qualifiedByName = "toSmtpProperties")
     ConfigurationSetModel toConfigurationSetModel(ConfigurationSetAggregationModel aggregationModel);
-    @Mapping(source = "configurationId", target = "configurationSetId")
-    ConfigurationSetModel toConfigurationSetModel(ConfigurationSetMasterDocument masterDocument);
 }
