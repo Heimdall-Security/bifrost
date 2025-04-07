@@ -35,3 +35,4 @@ heimdall:
 logging:
   level:
     org.springframework.security: TRACE
+    com.heimdallauth.server.services: DEBUG
