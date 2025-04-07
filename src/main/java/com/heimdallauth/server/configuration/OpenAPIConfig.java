@@ -14,11 +14,9 @@ import org.springframework.context.annotation.Configuration;
         type = SecuritySchemeType.OAUTH2,
         flows = @OAuthFlows(
                 clientCredentials = @OAuthFlow(
-                        tokenUrl = "https://keycloak-prod.ap-west-1.heimdallauth.com/realms/Heimdall%20Authentication%20-%20DEV",
+                        tokenUrl = "https://keycloak-prod.ap-west-1.heimdallauth.com/realms/mayanksoni-tech-dev",
                         scopes = {
-                                @OAuthScope(name = "openid", description = "OpenID scope"),
-                                @OAuthScope(name = "profile", description = "Profile scope"),
-                                @OAuthScope(name = "email", description = "Email scope")
+                                @OAuthScope(name = "openid", description = "OpenID scope")
                         }
                 )
         )
@@ -35,16 +33,6 @@ import org.springframework.context.annotation.Configuration;
                 version = "1.0",
                 description = "API documentation for Heimdall Bifrost"
         ),
-        servers = {
-                @Server(
-                        url = "http://localhost:8080",
-                        description = "Local server"
-                ),
-                @Server(
-                        url = "https://heimdall-bifrost-dev.dev.ap-west-1.heimdallauth.com",
-                        description = "Development CD Server"
-                )
-        },
         security = {
                 @SecurityRequirement(
                         name = "oauth2",
