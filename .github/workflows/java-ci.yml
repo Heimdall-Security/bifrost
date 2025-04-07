@@ -75,12 +75,10 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-      - name: Download Heimdall Bifrost Artifact
-        uses: actions/download-artifact@v4
-        id: download-artifact
-        with:
-          name: bifrost.jar
-          path: build/libs/bifrost.jar
+      - name: Login to GitHub Maven Registry
+        run: echo "//maven.pkg.github.com/${{ github.repository }}//:_authToken=${{ secrets.GITHUB_TOKEN }}" > ~/.m2/settings.xml
+      - name: Download JAR from GitHub Maven Registry
+        run: mvn dependency:get -Dartifact=com.heimdallauth.server:heimdall-bifrost:${{ github.ref_name }} -Ddest=build/libs/bifrost.jar
       - name: Downloaded Artifact Path
         run: echo ${{ steps.download-artifact.outputs.download-path }}
       - name: Login to Github Container Registry
