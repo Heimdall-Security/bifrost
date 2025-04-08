@@ -29,9 +29,11 @@ heimdall:
           role-management-suppression-entry-write: WRITE:MANAGEMENT:SUPPRESSION-ENTRY
           role-management-smtp-read: READ:MANAGEMENT:SMTP
           role-management-smtp-write: WRITE:MANAGEMENT:SMTP
+          role-send-email: SEND:EMAIL
         client:
           client-id: ${OAUTH_CLIENT_ID}
 
 logging:
   level:
-    org.springframework.security: TRACE
+    org.springframework.security: INFO
+    com.heimdallauth.server.services: DEBUG
