@@ -26,7 +26,7 @@ public class JavaMailSenderFactory {
     public JavaMailSenderFactory(JavaMailSender platformJavaMailSender, ConfigurationSetManagementService configurationSetManagementService) {
         this.configurationSetManagementService = configurationSetManagementService;
         this.platformJavaMailSender = platformJavaMailSender;
-        this.mailSenderCache = Caffeine.newBuilder().expireAfterWrite(10,TimeUnit.MINUTES).maximumSize(1000).build();
+        this.mailSenderCache = Caffeine.newBuilder().expireAfterWrite(5,TimeUnit.HOURS).maximumSize(1000).build();
     }
     /**
      * This method creates a JavaMailSender instance based on the provided SmtpProperties.
@@ -99,5 +99,8 @@ public class JavaMailSenderFactory {
             log.debug("JavaMailSender not found in cache. Configuring a new one.");
             return configureMailSenderFromDataSource(configurationId);
         });
+    }
+    protected void evictCache(UUID configurationId) {
+        mailSenderCache.invalidate(configurationId.toString());
     }
 }
