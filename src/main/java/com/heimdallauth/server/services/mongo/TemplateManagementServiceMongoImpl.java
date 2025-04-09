@@ -45,7 +45,7 @@ public class TemplateManagementServiceMongoImpl implements TemplateManagementSer
      */
     @Override
     public Template getTemplateById(UUID templateId) {
-        Optional<TemplateDocument> matchedTemplateById = Optional.ofNullable(this.mongoTemplate.findById(templateId, TemplateDocument.class, COLLECTION_TEMPLATES));
+        Optional<TemplateDocument> matchedTemplateById = Optional.ofNullable(this.mongoTemplate.findById(templateId.toString(), TemplateDocument.class, COLLECTION_TEMPLATES));
         return matchedTemplateById.map(templateMapper::mapToTemplateModel).orElseThrow(() -> new TemplateNotFound("Template not found"));
     }
 
@@ -82,9 +82,11 @@ public class TemplateManagementServiceMongoImpl implements TemplateManagementSer
      * @throws TemplateAlreadyExists if a template with the same name already exists under the same tenant ID.
      */
     private void checkForTemplateWithSameNameUnderSameTenantId(UUID tenantId, String templateName){
-        List<Template> getTemplatesWithSameNameUnderSameTenant = getTemplateByTenantIdAndTemplateName(tenantId, templateName);
-        if (!getTemplatesWithSameNameUnderSameTenant.isEmpty()){
-            throw new TemplateAlreadyExists("Template with same name already exists");
+        try{
+            List<Template> getTemplatesWithSameNameUnderSameTenant = getTemplateByTenantIdAndTemplateName(tenantId, templateName);
+            throw new TemplateAlreadyExists("Template with name " + templateName + " already exists");
+        }catch(TemplateNotFound ex){
+            log.debug("No template with same name under same tenant ID found... Proceeding");
         }
     }
 
@@ -96,10 +98,11 @@ public class TemplateManagementServiceMongoImpl implements TemplateManagementSer
      */
     @Override
     public Template createNewTemplate(CreateEmailTemplateDTO createEmailTemplateDTO) {
+        UUID templateId = UUID.randomUUID();
         try{
             this.checkForTemplateWithSameNameUnderSameTenantId(createEmailTemplateDTO.tenantId(), createEmailTemplateDTO.templateName());
             TemplateDocument documentToSave = TemplateDocument.builder()
-                    .id(UUID.randomUUID().toString())
+                    .id(templateId.toString())
                     .templateName(createEmailTemplateDTO.templateName())
                     .tenantId(createEmailTemplateDTO.tenantId().toString())
                     .content(createEmailTemplateDTO.templatedEmailContent())
@@ -110,7 +113,7 @@ public class TemplateManagementServiceMongoImpl implements TemplateManagementSer
             log.error("Template with same name already exists");
             throw e;
         }
-        return null;
+        return this.getTemplateById(templateId);
     }
 
     @Override
