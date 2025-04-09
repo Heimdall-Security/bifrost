@@ -29,6 +29,10 @@ heimdall:
           role-management-smtp-read: READ:MANAGEMENT:SMTP
           role-management-smtp-write: WRITE:MANAGEMENT:SMTP
           role-send-email: SEND:EMAIL
+          role-management-email-template-read-tenant: READ:MANAGEMENT:EMAIL-TEMPLATE:TENANT
+          role-management-email-template-write-tenant: WRITE:MANAGEMENT:EMAIL-TEMPLATE:TENANT
+          role-management-email-template-read: READ:MANAGEMENT:EMAIL-TEMPLATE
+          role-management-email-template-write: WRITE:MANAGEMENT:EMAIL-TEMPLATE
         client:
           client-id: ${OAUTH_CLIENT_ID}
 
