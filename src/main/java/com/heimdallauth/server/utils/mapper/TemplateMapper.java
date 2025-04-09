@@ -10,5 +10,6 @@ import org.mapstruct.MappingConstants;
 public interface TemplateMapper {
 
     @Mapping(source = "id", target = "templateId")
+    @Mapping(source="defaultMessageHeaders", target="defaultEmailHeaders")
     Template mapToTemplateModel(TemplateDocument document);
 }
