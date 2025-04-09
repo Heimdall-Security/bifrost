@@ -49,6 +49,16 @@ public class TemplateManagementServiceMongoImpl implements TemplateManagementSer
         return matchedTemplateById.map(templateMapper::mapToTemplateModel).orElseThrow(() -> new TemplateNotFound("Template not found"));
     }
 
+    @Override
+    public List<Template> getAllTemplatesByTenantId(UUID tenantId) {
+        Query query = Query.query(Criteria.where("tenantId").is(tenantId.toString()));
+        List<TemplateDocument> matchedTemplateDocuments = this.mongoTemplate.find(query, TemplateDocument.class, COLLECTION_TEMPLATES);
+        if (matchedTemplateDocuments.isEmpty()){
+            throw new TemplateNotFound("No Templates found for Tenant ID");
+        }
+        return matchedTemplateDocuments.stream().map(templateMapper::mapToTemplateModel).collect(Collectors.toList());
+    }
+
     /**
      * Retrieves a list of templates by tenant ID and template name.
      * @param tenantId The tenant ID to search for.
