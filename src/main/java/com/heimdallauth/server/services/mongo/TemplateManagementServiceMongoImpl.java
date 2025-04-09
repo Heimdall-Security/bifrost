@@ -25,6 +25,8 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import static org.bson.assertions.Assertions.assertNotNull;
+
 @Service
 @Slf4j
 public class TemplateManagementServiceMongoImpl implements TemplateManagementService {
@@ -114,6 +116,8 @@ public class TemplateManagementServiceMongoImpl implements TemplateManagementSer
      */
     @Override
     public Template createNewTemplate(CreateEmailTemplateDTO createEmailTemplateDTO) {
+        assertNotNull(createEmailTemplateDTO.tenantId());
+        assertNotNull(createEmailTemplateDTO.templateName());
         UUID templateId = UUID.randomUUID();
         try{
             this.checkForTemplateWithSameNameUnderSameTenantId(createEmailTemplateDTO.tenantId(), createEmailTemplateDTO.templateName());
