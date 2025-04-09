@@ -49,4 +49,10 @@ public class TemplateManagementController {
     public ResponseEntity<Template> getTemplateById(@PathVariable UUID templateId) {
         return ResponseEntity.ok(templateManagementService.getTemplateById(templateId));
     }
+    @DeleteMapping("/{templateId}")
+    @PreAuthorize("hasRole(@heimdallBifrostRoleConfiguration.ROLE_MANAGEMENT_EMAIL_TEMPLATE_WRITE_TENANT)")
+    public ResponseEntity<Void> deleteTemplate(@PathVariable UUID templateId) {
+        this.templateManagementService.deleteTemplate(templateId);
+        return ResponseEntity.noContent().build();
+    }
 }
