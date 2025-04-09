@@ -1,7 +1,7 @@
 package com.heimdallauth.server.controllers.v1.management;
 
 import com.heimdallauth.server.dto.bifrost.SendEmailDTO;
-import com.heimdallauth.server.services.EmailService;
+import com.heimdallauth.server.services.SendEmailProcessor;
 import jakarta.mail.MessagingException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -13,16 +13,16 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/email")
 public class MailController {
-    private final EmailService emailService;
+    private final SendEmailProcessor sendEmailProcessor;
 
-    public MailController( EmailService emailService) {
-        this.emailService = emailService;
+    public MailController(SendEmailProcessor sendEmailProcessor) {
+        this.sendEmailProcessor = sendEmailProcessor;
     }
 
     @PostMapping("/send")
     @PreAuthorize("hasRole(@heimdallBifrostRoleConfiguration.ROLE_SEND_EMAIL)")
     public ResponseEntity<Void> sendEmailWithConfiguration(@RequestBody SendEmailDTO sendEmailDTO) throws MessagingException {
-        this.emailService.sendEmail(sendEmailDTO);
+        this.sendEmailProcessor.processSendEmail(sendEmailDTO);
         return ResponseEntity.ok().build();
     }
 }
