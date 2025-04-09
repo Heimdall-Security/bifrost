@@ -34,8 +34,8 @@ repositories {
 ext {
     set('springCloudVersion', "2024.0.0")
     set('handlebarsVersion', '4.4.0')
-//    set('heimdallCommonsVersion','1.0.3')
-    set('heimdallCommonsVersion','55')
+    set('heimdallCommonsVersion','2.0.1')
+//    set('heimdallCommonsVersion','55')
     set('mapStructVersion', '1.6.3')
     set('caffeineCacheVersion','3.2.0')
 }
