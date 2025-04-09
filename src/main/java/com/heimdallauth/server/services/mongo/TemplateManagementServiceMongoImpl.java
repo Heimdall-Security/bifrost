@@ -19,6 +19,7 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -122,6 +123,8 @@ public class TemplateManagementServiceMongoImpl implements TemplateManagementSer
                     .tenantId(createEmailTemplateDTO.tenantId().toString())
                     .content(createEmailTemplateDTO.templatedEmailContent())
                     .defaultMessageHeaders(createEmailTemplateDTO.defaultEmailHeaders())
+                    .createdAt(Instant.now())
+                    .updatedAt(Instant.now())
                     .build();
             this.mongoTemplate.save(documentToSave, COLLECTION_TEMPLATES);
         }catch (TemplateAlreadyExists e){
@@ -135,7 +138,8 @@ public class TemplateManagementServiceMongoImpl implements TemplateManagementSer
     public List<Template> updateTemplate(UUID templateId, CreateEmailTemplateDTO createEmailTemplateDTO) {
         EmailContent updatedEmailContent = createEmailTemplateDTO.templatedEmailContent();
         List<MessageHeader> updatedDefaultEmailHeaders = createEmailTemplateDTO.defaultEmailHeaders();
-        Update mongoUpdate = Update.update("content",updatedEmailContent).set("defaultMessageHeaders", updatedDefaultEmailHeaders);
+        Instant updateTimestamp = Instant.now();
+        Update mongoUpdate = Update.update("content",updatedEmailContent).set("defaultMessageHeaders", updatedDefaultEmailHeaders).set("updatedAt", updateTimestamp);
         Query selectionQuery = Query.query(Criteria.where("id").is(templateId.toString()));
         UpdateResult mongoUpdateResult = this.mongoTemplate.updateMulti(selectionQuery, mongoUpdate, TemplateDocument.class, COLLECTION_TEMPLATES);
         log.debug("Updated {} templates with ID {}", mongoUpdateResult.getModifiedCount(), templateId);
