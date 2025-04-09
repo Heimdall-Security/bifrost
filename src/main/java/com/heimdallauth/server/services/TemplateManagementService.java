@@ -9,6 +9,7 @@ import java.util.UUID;
 public interface TemplateManagementService {
     Template getTemplateById(UUID templateId);
     List<Template> getAllTemplatesByTenantId(UUID tenantId);
+    List<Template> getAllTemplates();
     List<Template> getTemplateByTenantIdAndTemplateName(UUID tenantId, String templateName);
     Template createNewTemplate(CreateEmailTemplateDTO createEmailTemplateDTO);
     List<Template> updateTemplate(UUID templateId, CreateEmailTemplateDTO createEmailTemplateDTO);
