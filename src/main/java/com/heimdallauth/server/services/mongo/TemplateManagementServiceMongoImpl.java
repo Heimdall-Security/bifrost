@@ -84,7 +84,7 @@ public class TemplateManagementServiceMongoImpl implements TemplateManagementSer
      */
     @Override
     public List<Template> getTemplateByTenantIdAndTemplateName(UUID tenantId, String templateName) {
-        Query templateSearchQuery = Query.query(Criteria.where("templateName").is(templateName).and("tenantId").is(tenantId));
+        Query templateSearchQuery = Query.query(Criteria.where("templateName").is(templateName).and("tenantId").is(tenantId.toString()));
         List<TemplateDocument> matchedTemplates = this.mongoTemplate.find(templateSearchQuery, TemplateDocument.class, COLLECTION_TEMPLATES);
         if (matchedTemplates.isEmpty()){
             throw new TemplateNotFound("Template not found");
