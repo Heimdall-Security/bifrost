@@ -40,7 +40,7 @@ public class SendEmailProcessor {
             validateSendEmailPayload(sendEmailDTO);
             if(sendEmailDTO.content() != null){
                 log.debug("Sending Email using platform sender");
-                JavaMailSender platformJavaMailSender = javaMailSenderFactory.getMailSender(null);
+                JavaMailSender platformJavaMailSender = javaMailSenderFactory.getMailSender(Optional.empty());
                 this.prepareEmailPayload(
                         sendEmailDTO.destination(),
                         DEFAULT_FROM_ADDRESS,
@@ -57,7 +57,7 @@ public class SendEmailProcessor {
                         log.error("Tenant ID mismatch for Template ID: {} and ConfigurationSet ID: {}", sendEmailDTO.templateId(), sendEmailDTO.configurationSetId());
                         throw new HeimdallBifrostBadDataException("Template does not belong to the same tenant as the configuration set");
                     }
-                    this.prepareEmailPayload(sendEmailDTO.destination(),configurationSetModel.smtpProperties().fromEmailAddress(), fetchedTemplate.content(), sendEmailDTO.context(), javaMailSenderFactory.getMailSender(sendEmailDTO.configurationSetId()));
+                    this.prepareEmailPayload(sendEmailDTO.destination(),configurationSetModel.smtpProperties().fromEmailAddress(), fetchedTemplate.content(), sendEmailDTO.context(), javaMailSenderFactory.getMailSender(Optional.ofNullable(configurationSetModel.smtpProperties())));
                 }catch (TemplateNotFound e){
                     log.error("Template not found for ID: {}", sendEmailDTO.templateId());
                     throw new HeimdallBifrostBadDataException("Template not found", e);
