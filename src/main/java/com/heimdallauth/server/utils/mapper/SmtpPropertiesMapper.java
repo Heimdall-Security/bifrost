@@ -15,6 +15,7 @@ public interface SmtpPropertiesMapper {
     @Mapping(source = "smtpServerLoginUsername", target = "loginUsername")
     @Mapping(source = "smtpServerLoginPassword", target = "loginPassword")
     @Mapping(source = "fromEmailAddress", target = "fromEmailAddress")
+    @Mapping(source = "id", target = "propertiesId")
     @Named("toSmtpProperties")
     SmtpProperties toSmtpProperties(SmtpPropertiesDocument smtpPropertiesDocument);
 }
