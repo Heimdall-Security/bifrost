@@ -15,9 +15,7 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 import static org.hibernate.validator.internal.util.Contracts.assertNotNull;
 
@@ -53,7 +51,7 @@ public class SendEmailProcessor {
                 processedEmailHtmlBody = emailTemplatingService.processString(sendEmailDTO.content().htmlBodyContent(), context);
                 processedEmailPlainTextBody = emailTemplatingService.processString(sendEmailDTO.content().plainTextContent(), context);
                 log.debug("Sending Email using platform sender");
-                JavaMailSender platformJavaMailSender = javaMailSenderFactory.getMailSender(null);
+                JavaMailSender platformJavaMailSender = javaMailSenderFactory.getMailSender(Optional.empty());
                 this.connectAndSendEmail(
                         platformJavaMailSender,
                         sendEmailDTO.destination().toDestinationEmailAddress().stream().map(String::new).toArray(String[]::new),
@@ -67,7 +65,7 @@ public class SendEmailProcessor {
                     log.debug("Fetching Template From repository and processing");
                     Template fetchedTemplate = this.templateManagementService.getTemplateById(sendEmailDTO.templateId());
                     ConfigurationSetModel configurationSetModel = this.configurationSetManagementService.getConfigurationSetById(sendEmailDTO.configurationSetId());
-                    if(fetchedTemplate.tenantId() != configurationSetModel.tenantId()){
+                    if(!Objects.equals(fetchedTemplate.tenantId().toString(), configurationSetModel.tenantId().toString())){
                         log.error("Tenant ID mismatch for Template ID: {} and ConfigurationSet ID: {}", sendEmailDTO.templateId(), sendEmailDTO.configurationSetId());
                         throw new HeimdallBifrostBadDataException("Template does not belong to the same tenant as the configuration set");
                     }
@@ -75,7 +73,7 @@ public class SendEmailProcessor {
                     processedEmailSubject = emailTemplatingService.processString(fetchedTemplate.content().subject(),context );
                     processedEmailHtmlBody = emailTemplatingService.processString(fetchedTemplate.content().htmlBodyContent(),context);
                     processedEmailPlainTextBody = emailTemplatingService.processString(fetchedTemplate.content().plainTextContent(),context);
-                    JavaMailSender tenantJavaMailSender = javaMailSenderFactory.getMailSender(sendEmailDTO.configurationSetId());
+                    JavaMailSender tenantJavaMailSender = javaMailSenderFactory.getMailSender(Optional.ofNullable(configurationSetModel.smtpProperties()));
                     this.connectAndSendEmail(
                             tenantJavaMailSender,
                             sendEmailDTO.destination().toDestinationEmailAddress().stream().map(String::new).toArray(String[]::new),
