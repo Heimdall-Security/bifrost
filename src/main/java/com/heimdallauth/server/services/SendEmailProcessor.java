@@ -4,9 +4,7 @@ import com.heimdallauth.server.dto.bifrost.SendEmailDTO;
 import com.heimdallauth.server.exceptions.ConfigurationSetNotFound;
 import com.heimdallauth.server.exceptions.HeimdallBifrostBadDataException;
 import com.heimdallauth.server.exceptions.TemplateNotFound;
-import com.heimdallauth.server.models.bifrost.ConfigurationSetModel;
-import com.heimdallauth.server.models.bifrost.EmailContext;
-import com.heimdallauth.server.models.bifrost.Template;
+import com.heimdallauth.server.models.bifrost.*;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +15,6 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 import static org.hibernate.validator.internal.util.Contracts.assertNotNull;
 
@@ -31,7 +28,6 @@ public class SendEmailProcessor {
 
     private static final String DEFAULT_FROM_ADDRESS = "noreply@mayanksoni.tech";
 
-    private ThreadLocal<ConfigurationSetModel> currentConfigurationSet = new ThreadLocal<>();
 
     public SendEmailProcessor(EmailTemplatingService emailTemplatingService, TemplateManagementService templateManagementService, JavaMailSenderFactory javaMailSenderFactory, ConfigurationSetManagementService configurationSetManagementService) {
         this.emailTemplatingService = emailTemplatingService;
@@ -41,26 +37,17 @@ public class SendEmailProcessor {
     }
 
     public void processSendEmail(SendEmailDTO sendEmailDTO) {
-        String processedEmailSubject = null;
-        String processedEmailPlainTextBody = null;
-        String processedEmailHtmlBody = null;
         try{
             validateSendEmailPayload(sendEmailDTO);
             if(sendEmailDTO.content() != null){
-                log.debug("Processing Inline Email Content");
-                Map<String, Object> context = convertContextToMap(sendEmailDTO.context());
-                processedEmailSubject = emailTemplatingService.processString(sendEmailDTO.content().subject(), context);
-                processedEmailHtmlBody = emailTemplatingService.processString(sendEmailDTO.content().htmlBodyContent(), context);
-                processedEmailPlainTextBody = emailTemplatingService.processString(sendEmailDTO.content().plainTextContent(), context);
                 log.debug("Sending Email using platform sender");
                 JavaMailSender platformJavaMailSender = javaMailSenderFactory.getMailSender(null);
-                this.connectAndSendEmail(
-                        platformJavaMailSender,
-                        sendEmailDTO.destination().toDestinationEmailAddress().stream().map(String::new).toArray(String[]::new),
-                        processedEmailSubject,
-                        processedEmailHtmlBody,
-                        processedEmailPlainTextBody,
-                        DEFAULT_FROM_ADDRESS
+                this.prepareEmailPayload(
+                        sendEmailDTO.destination(),
+                        DEFAULT_FROM_ADDRESS,
+                        sendEmailDTO.content(),
+                        sendEmailDTO.context(),
+                        platformJavaMailSender
                 );
             }else if(sendEmailDTO.templateId() != null){
                 try{
@@ -71,19 +58,7 @@ public class SendEmailProcessor {
                         log.error("Tenant ID mismatch for Template ID: {} and ConfigurationSet ID: {}", sendEmailDTO.templateId(), sendEmailDTO.configurationSetId());
                         throw new HeimdallBifrostBadDataException("Template does not belong to the same tenant as the configuration set");
                     }
-                    Map<String, Object> context = convertContextToMap(sendEmailDTO.context());
-                    processedEmailSubject = emailTemplatingService.processString(fetchedTemplate.content().subject(),context );
-                    processedEmailHtmlBody = emailTemplatingService.processString(fetchedTemplate.content().htmlBodyContent(),context);
-                    processedEmailPlainTextBody = emailTemplatingService.processString(fetchedTemplate.content().plainTextContent(),context);
-                    JavaMailSender tenantJavaMailSender = javaMailSenderFactory.getMailSender(sendEmailDTO.configurationSetId());
-                    this.connectAndSendEmail(
-                            tenantJavaMailSender,
-                            sendEmailDTO.destination().toDestinationEmailAddress().stream().map(String::new).toArray(String[]::new),
-                            processedEmailSubject,
-                            processedEmailHtmlBody,
-                            processedEmailPlainTextBody,
-                            configurationSetModel.smtpProperties().fromEmailAddress()
-                    );
+                    this.prepareEmailPayload(sendEmailDTO.destination(),configurationSetModel.smtpProperties().fromEmailAddress(), fetchedTemplate.content(), sendEmailDTO.context(), javaMailSenderFactory.getMailSender(sendEmailDTO.configurationSetId()));
                 }catch (TemplateNotFound e){
                     log.error("Template not found for ID: {}", sendEmailDTO.templateId());
                     throw new HeimdallBifrostBadDataException("Template not found", e);
@@ -100,6 +75,17 @@ public class SendEmailProcessor {
             throw new RuntimeException(e);
         }
     }
+
+    /**
+     * This method connects to the mail server and sends the email using the provided JavaMailSender.
+     *
+     * @param mailSender The JavaMailSender instance to use for sending the email.
+     * @param to The recipient email addresses.
+     * @param subject The subject of the email.
+     * @param htmlBody The HTML body of the email.
+     * @param plainTextBody The plain text body of the email.
+     * @param fromEmailAddress The sender's email address.
+     */
     private void connectAndSendEmail(JavaMailSender mailSender, String[] to, String subject, String htmlBody, String plainTextBody, String fromEmailAddress) {
         try {
             MimeMessage mimeMessage = mailSender.createMimeMessage();
@@ -115,19 +101,40 @@ public class SendEmailProcessor {
         }
 
     }
+    /**
+     * This method validates the SendEmailDTO object to ensure it contains the required fields.
+     *
+     * @param sendEmailDTO The SendEmailDTO object to validate.
+     */
     private void validateSendEmailPayload(SendEmailDTO sendEmailDTO) {
         assertNotNull(sendEmailDTO, "SendEmailDTO cannot be null");
         assertNotNull(sendEmailDTO.destination(), "Destination cannot be null");
         assertNotNull(sendEmailDTO.context(), "Context cannot be null");
 
     }
-    private void validateTenantForConfigurationSetId(UUID configurationSetId, UUID templateTenantId){
-        try{
-            this.configurationSetManagementService.getConfigurationSetById(configurationSetId);
-        }catch (ConfigurationSetNotFound e){
-            log.error("ConfigurationSet not found for ID: {}", configurationSetId);
-            throw new HeimdallBifrostBadDataException("ConfigurationSet not found", e);
-        }
+    /**
+     * This method prepares the email payload by processing the template and context.
+     *
+     * @param destination The email destination.
+     * @param fromEmailAddress The Sender's email address
+     * @param content The fetched template to use for the email.
+     * @param emailContext The email context containing user and organization information.
+     * @param identifiedMailSender The JavaMailSender instance to use for sending the email.
+     * @throws IOException If an error occurs while processing the template.
+     */
+    private void prepareEmailPayload(EmailDestination destination, String fromEmailAddress, EmailContent content, EmailContext emailContext, JavaMailSender identifiedMailSender) throws IOException {
+        Map<String, Object> context = convertContextToMap(emailContext);
+        String processedEmailSubject = emailTemplatingService.processString(content.subject(),context );
+        String processedEmailHtmlBody = emailTemplatingService.processString(content.htmlBodyContent(),context);
+        String processedEmailPlainTextBody = emailTemplatingService.processString(content.plainTextContent(),context);
+        this.connectAndSendEmail(
+                identifiedMailSender,
+                destination.toDestinationEmailAddress().stream().map(String::new).toArray(String[]::new),
+                processedEmailSubject,
+                processedEmailHtmlBody,
+                processedEmailPlainTextBody,
+                fromEmailAddress
+        );
     }
     private Map<String, Object> convertContextToMap(EmailContext context) {
         Map<String, Object> contextMap = new HashMap<>();

@@ -100,7 +100,7 @@ public class JavaMailSenderFactory {
             return configureMailSenderFromDataSource(configurationId);
         });
     }
-    protected void evictCache(UUID configurationId) {
+    public void evictCache(UUID configurationId) {
         mailSenderCache.invalidate(configurationId.toString());
     }
 }
