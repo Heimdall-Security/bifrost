@@ -3,8 +3,6 @@ package com.heimdallauth.server.services;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.heimdallauth.server.constants.bifrost.SmtpAuthenticationMethod;
-import com.heimdallauth.server.exceptions.ConfigurationSetNotFound;
-import com.heimdallauth.server.models.bifrost.ConfigurationSetModel;
 import com.heimdallauth.server.models.bifrost.SmtpProperties;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -20,11 +18,9 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class JavaMailSenderFactory {
     private final JavaMailSender platformJavaMailSender;
-    private final ConfigurationSetManagementService configurationSetManagementService;
     private final Cache<String, JavaMailSender> mailSenderCache;
 
-    public JavaMailSenderFactory(JavaMailSender platformJavaMailSender, ConfigurationSetManagementService configurationSetManagementService) {
-        this.configurationSetManagementService = configurationSetManagementService;
+    public JavaMailSenderFactory(JavaMailSender platformJavaMailSender) {
         this.platformJavaMailSender = platformJavaMailSender;
         this.mailSenderCache = Caffeine.newBuilder().expireAfterWrite(5,TimeUnit.HOURS).maximumSize(1000).build();
     }
@@ -37,6 +33,7 @@ public class JavaMailSenderFactory {
      * @return A configured JavaMailSender instance.
      */
     private JavaMailSender getJavaMailSender(SmtpProperties smtpProperties) {
+        log.debug("Creating new instance of JavaMailSender for smtpProperties: {}", smtpProperties.propertiesId());
         JavaMailSenderImpl javaMailSender = new JavaMailSenderImpl();
         javaMailSender.setHost(smtpProperties.serverAddress());
         javaMailSender.setPort(smtpProperties.portNumber());
@@ -57,50 +54,21 @@ public class JavaMailSenderFactory {
     }
 
     /**
-     * This method configures a JavaMailSender instance based on the provided configurationId.
-     * It retrieves the SmtpProperties from the ConfigurationSetModel and creates a JavaMailSender.
-     * If the configurationId is not found, it returns the default platform mail sender.
+     * This method retrieves the JavaMailSender instance from cache or creates a new one if it doesn't exist.
      *
-     * @param configurationId The UUID of the configuration set.
+     * @param smtpProperties The SmtpProperties from the configuration set
      * @return A configured JavaMailSender instance.
      */
-    private JavaMailSender configureMailSenderFromDataSource(UUID configurationId){
-        log.debug("Configuring JavaMailSender from DataSource");
-        try{
-            Optional<ConfigurationSetModel> configurationSetModel = Optional.ofNullable(this.configurationSetManagementService.getConfigurationSetById(configurationId));
-            if(configurationSetModel.isPresent()){
-                SmtpProperties smtpProperties = configurationSetModel.get().smtpProperties();
-                if(smtpProperties == null) {
-                    log.debug("SMTP Properties not found. Using default platform mail sender");
-                    return platformJavaMailSender;
-                }
-                return getJavaMailSender(smtpProperties);
-            }
-        }catch (ConfigurationSetNotFound ex){
-            log.debug("SMTP Properties not found. Using default platform mail sender");
+    public JavaMailSender getMailSender(Optional<SmtpProperties> smtpProperties) {
+        if(smtpProperties.isEmpty()) {
+            log.debug("No smtpProperties found, returning platform returning platform JavaMailSender");
             return platformJavaMailSender;
+        }else{
+            return mailSenderCache.get(smtpProperties.get().propertiesId(), key -> getJavaMailSender(smtpProperties.get()));
         }
-        return null; //Unreachable Code
     }
-    /**
-     * This method retrieves a JavaMailSender instance based on the provided configurationId.
-     * It checks if the JavaMailSender is already present in the cache map. If not, it configures
-     * a new JavaMailSender using the configurationId and returns it.
-     *
-     * @param configurationId The UUID of the configuration set.
-     * @return A configured JavaMailSender instance.
-     */
-    public JavaMailSender getMailSender(UUID configurationId) {
-        if(configurationId == null) {
-            log.debug("Configuration ID is null. Using default platform mail sender");
-            return platformJavaMailSender;
-        }
-        return mailSenderCache.get(configurationId.toString(), key -> {
-            log.debug("JavaMailSender not found in cache. Configuring a new one.");
-            return configureMailSenderFromDataSource(configurationId);
-        });
-    }
-    public void evictCache(UUID configurationId) {
+
+    protected void evictCache(UUID configurationId) {
         mailSenderCache.invalidate(configurationId.toString());
     }
 }

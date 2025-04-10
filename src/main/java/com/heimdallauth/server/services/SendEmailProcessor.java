@@ -13,8 +13,7 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import static org.hibernate.validator.internal.util.Contracts.assertNotNull;
 
@@ -54,7 +53,7 @@ public class SendEmailProcessor {
                     log.debug("Fetching Template From repository and processing");
                     Template fetchedTemplate = this.templateManagementService.getTemplateById(sendEmailDTO.templateId());
                     ConfigurationSetModel configurationSetModel = this.configurationSetManagementService.getConfigurationSetById(sendEmailDTO.configurationSetId());
-                    if(fetchedTemplate.tenantId() != configurationSetModel.tenantId()){
+                    if(!Objects.equals(fetchedTemplate.tenantId().toString(), configurationSetModel.tenantId().toString())){
                         log.error("Tenant ID mismatch for Template ID: {} and ConfigurationSet ID: {}", sendEmailDTO.templateId(), sendEmailDTO.configurationSetId());
                         throw new HeimdallBifrostBadDataException("Template does not belong to the same tenant as the configuration set");
                     }
