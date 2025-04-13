@@ -33,6 +33,7 @@ heimdall:
           role-management-email-template-write-tenant: WRITE:MANAGEMENT:EMAIL-TEMPLATE:TENANT
           role-management-email-template-read: READ:MANAGEMENT:EMAIL-TEMPLATE
           role-management-email-template-write: WRITE:MANAGEMENT:EMAIL-TEMPLATE
+          scope-send-email: SEND:EMAIL
         client:
           client-id: ${OAUTH_CLIENT_ID}
 
