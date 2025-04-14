@@ -22,7 +22,7 @@ public class MailController {
     }
 
     @PostMapping("/send")
-    @PreAuthorize("hasRole(@heimdallBifrostRoleConfiguration.ROLE_SEND_EMAIL) or hasAuthority(@heimdallBifrostRoleConfiguration.SCOPE_SEND_EMAIL)")
+    @PreAuthorize("hasAuthority(@heimdallBifrostRoleConfiguration.SCOPE_SEND_EMAIL)")
     public ResponseEntity<Void> sendEmailWithConfiguration(@RequestBody SendEmailDTO sendEmailDTO) {
         this.sendEmailProcessor.processSendEmail(sendEmailDTO);
         return ResponseEntity.ok().build();
