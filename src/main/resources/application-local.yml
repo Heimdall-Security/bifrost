@@ -23,9 +23,22 @@ heimdall:
         roles:
           role-management-read: READ:MANAGEMENT
           role-management-write: WRITE:MANAGEMENT
+          role-management-configuration-set-read: READ:MANAGEMENT:CONFIGURATION-SET
+          role-management-configuration-set-write: READ:MANAGEMENT:CONFIGURATION-SET
+          role-management-suppression-entry-read: READ:MANAGEMENT:SUPPRESSION-ENTRIES
+          role-management-suppression-entry-write: WRITE:MANAGEMENT:SUPPRESSION-ENTRY
+          role-management-smtp-read: READ:MANAGEMENT:SMTP
+          role-management-smtp-write: WRITE:MANAGEMENT:SMTP
+          role-management-email-template-read-tenant: READ:MANAGEMENT:EMAIL-TEMPLATE:TENANT
+          role-management-email-template-write-tenant: WRITE:MANAGEMENT:EMAIL-TEMPLATE:TENANT
+          role-management-email-template-read: READ:MANAGEMENT:EMAIL-TEMPLATE
+          role-management-email-template-write: WRITE:MANAGEMENT:EMAIL-TEMPLATE
+          role-send-email: SEND:EMAIL
+          scope-send-email: SEND:EMAIL
         client:
           client-id: ${OAUTH_CLIENT_ID}
 
 logging:
   level:
     org.springframework.security: TRACE
+    com.heimdallauth.server.services: DEBUG
