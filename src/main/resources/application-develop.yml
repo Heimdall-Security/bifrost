@@ -17,6 +17,8 @@ spring:
           issuer-uri: ${SECURITY_TOKEN_ISSUER}
 heimdall:
   bifrost:
+    global-suppression-entry:
+      url: https://raw.githubusercontent.com/Heimdall-Security/global-suppression-entries/refs/heads/main/global-suppression-list.json
     security:
       oauth2:
         roles:

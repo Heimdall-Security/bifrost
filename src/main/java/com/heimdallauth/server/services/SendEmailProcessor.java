@@ -13,10 +13,9 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 import static org.hibernate.validator.internal.util.Contracts.assertNotNull;
 
@@ -27,20 +26,24 @@ public class SendEmailProcessor {
     private final TemplateManagementService templateManagementService;
     private final JavaMailSenderFactory javaMailSenderFactory;
     private final ConfigurationSetManagementService configurationSetManagementService;
+    private final EmailSuppressionProcessor emailSuppressionProcessor;
 
     private static final String DEFAULT_FROM_ADDRESS = "noreply@mayanksoni.tech";
 
 
-    public SendEmailProcessor(EmailTemplatingService emailTemplatingService, TemplateManagementService templateManagementService, JavaMailSenderFactory javaMailSenderFactory, ConfigurationSetManagementService configurationSetManagementService) {
+    public SendEmailProcessor(EmailTemplatingService emailTemplatingService, TemplateManagementService templateManagementService, JavaMailSenderFactory javaMailSenderFactory, ConfigurationSetManagementService configurationSetManagementService, EmailSuppressionProcessor emailSuppressionProcessor) {
         this.emailTemplatingService = emailTemplatingService;
         this.templateManagementService = templateManagementService;
         this.javaMailSenderFactory = javaMailSenderFactory;
         this.configurationSetManagementService = configurationSetManagementService;
+        this.emailSuppressionProcessor = emailSuppressionProcessor;
     }
 
     public void processSendEmail(SendEmailDTO sendEmailDTO) {
         try{
             validateSendEmailPayload(sendEmailDTO);
+            ConfigurationSetModel configurationSetModel = this.configurationSetManagementService.getConfigurationSetById(sendEmailDTO.configurationSetId());
+            Set<String> suppressedDestinations = validateForSuppressedDestinations(sendEmailDTO, configurationSetModel.suppressionEntries());
             if(sendEmailDTO.content() != null){
                 log.debug("Sending Email using platform sender");
                 JavaMailSender platformJavaMailSender = javaMailSenderFactory.getMailSender(Optional.empty());
@@ -49,18 +52,18 @@ public class SendEmailProcessor {
                         DEFAULT_FROM_ADDRESS,
                         sendEmailDTO.content(),
                         sendEmailDTO.context(),
-                        platformJavaMailSender
+                        platformJavaMailSender,
+                        suppressedDestinations
                 );
             }else if(sendEmailDTO.templateId() != null){
                 try{
                     log.debug("Fetching Template From repository and processing");
                     Template fetchedTemplate = this.templateManagementService.getTemplateById(sendEmailDTO.templateId());
-                    ConfigurationSetModel configurationSetModel = this.configurationSetManagementService.getConfigurationSetById(sendEmailDTO.configurationSetId());
                     if(!Objects.equals(fetchedTemplate.tenantId().toString(), configurationSetModel.tenantId().toString())){
                         log.error("Tenant ID mismatch for Template ID: {} and ConfigurationSet ID: {}", sendEmailDTO.templateId(), sendEmailDTO.configurationSetId());
                         throw new HeimdallBifrostBadDataException("Template does not belong to the same tenant as the configuration set");
                     }
-                    this.prepareEmailPayload(sendEmailDTO.destination(),configurationSetModel.smtpProperties().fromEmailAddress(), fetchedTemplate.content(), sendEmailDTO.context(), javaMailSenderFactory.getMailSender(Optional.ofNullable(configurationSetModel.smtpProperties())));
+                    this.prepareEmailPayload(sendEmailDTO.destination(),configurationSetModel.smtpProperties().fromEmailAddress(), fetchedTemplate.content(), sendEmailDTO.context(), javaMailSenderFactory.getMailSender(Optional.of(configurationSetModel.smtpProperties())), suppressedDestinations);
                 }catch (TemplateNotFound e){
                     log.error("Template not found for ID: {}", sendEmailDTO.templateId());
                     throw new HeimdallBifrostBadDataException("Template not found", e);
@@ -112,7 +115,29 @@ public class SendEmailProcessor {
         assertNotNull(sendEmailDTO, "SendEmailDTO cannot be null");
         assertNotNull(sendEmailDTO.destination(), "Destination cannot be null");
         assertNotNull(sendEmailDTO.context(), "Context cannot be null");
+    }
+    private Set<String> validateForSuppressedDestinations(SendEmailDTO sendEmailDTO, List<SuppressionEntryModel> configurationSetSuppressionEntries) {
+        List<String> destinations = mergeDestinationAddresses(sendEmailDTO.destination());
+        Set<String> suppressedDestinations = emailSuppressionProcessor.checkForSuppressions(destinations, configurationSetSuppressionEntries);
+        if (!suppressedDestinations.isEmpty()) {
+            log.info("Suppressed destinations: {}", suppressedDestinations);
+//            throw new SuppressedDestination("Email suppressed", suppressedDestinations);
+        }
+        return suppressedDestinations;
+    }
 
+    private List<String> mergeDestinationAddresses(EmailDestination emailDestination) {
+        List<String> mergedAddresses = new ArrayList<>();
+        if (emailDestination.toDestinationEmailAddress() != null) {
+            mergedAddresses.addAll(emailDestination.toDestinationEmailAddress());
+        }
+        if (emailDestination.ccDestinationEmailAddress() != null) {
+            mergedAddresses.addAll(emailDestination.ccDestinationEmailAddress());
+        }
+        if (emailDestination.bccDestinationEmailAddress() != null) {
+            mergedAddresses.addAll(emailDestination.bccDestinationEmailAddress());
+        }
+        return mergedAddresses;
     }
     /**
      * This method prepares the email payload by processing the template and context.
@@ -124,19 +149,47 @@ public class SendEmailProcessor {
      * @param identifiedMailSender The JavaMailSender instance to use for sending the email.
      * @throws IOException If an error occurs while processing the template.
      */
-    private void prepareEmailPayload(EmailDestination destination, String fromEmailAddress, EmailContent content, EmailContext emailContext, JavaMailSender identifiedMailSender) throws IOException {
+    private void prepareEmailPayload(EmailDestination destination, String fromEmailAddress, EmailContent content, EmailContext emailContext, JavaMailSender identifiedMailSender, Set<String> identifiedSuppressedDestinations) throws IOException {
         Map<String, Object> context = convertContextToMap(emailContext);
-        String processedEmailSubject = emailTemplatingService.processString(content.subject(),context );
-        String processedEmailHtmlBody = emailTemplatingService.processString(content.htmlBodyContent(),context);
-        String processedEmailPlainTextBody = emailTemplatingService.processString(content.plainTextContent(),context);
-        this.connectAndSendEmail(
-                identifiedMailSender,
-                destination.toDestinationEmailAddress().stream().map(String::new).toArray(String[]::new),
-                processedEmailSubject,
-                processedEmailHtmlBody,
-                processedEmailPlainTextBody,
-                fromEmailAddress
-        );
+        CompletableFuture<String> subjectFuture = CompletableFuture.supplyAsync(() -> {
+            try {
+                return emailTemplatingService.processString(content.subject(), context);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+        CompletableFuture<String> htmlBodyFuture = CompletableFuture.supplyAsync(() -> {
+            try {
+                return emailTemplatingService.processString(content.htmlBodyContent(), context);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+        CompletableFuture<String> plainTextBodyFuture = CompletableFuture.supplyAsync(() -> {
+            try {
+                return emailTemplatingService.processString(content.plainTextContent(), context);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+        CompletableFuture<Void> combinedFuture = CompletableFuture.allOf(subjectFuture, htmlBodyFuture, plainTextBodyFuture);
+        combinedFuture.join();
+        try {
+            List<String> filteredDestinationToAddresses = destination.toDestinationEmailAddress().stream().filter(s -> !identifiedSuppressedDestinations.contains(s)).toList();
+            if(filteredDestinationToAddresses.isEmpty()) {
+                throw new HeimdallBifrostBadDataException("All destination email addresses are suppressed");
+            }
+            this.connectAndSendEmail(
+                    identifiedMailSender,
+                    filteredDestinationToAddresses.stream().map(String::new).toArray(String[]::new),
+                    subjectFuture.get(),
+                    htmlBodyFuture.get(),
+                    plainTextBodyFuture.get(),
+                    fromEmailAddress
+            );
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
+        }
     }
     private Map<String, Object> convertContextToMap(EmailContext context) {
         Map<String, Object> contextMap = new HashMap<>();
